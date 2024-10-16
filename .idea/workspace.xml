@@ -7,9 +7,15 @@
     <list default="true" id="68971e0c-dbaf-4bf6-8ed2-bbefd3510547" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/globalInfluence.gexf" beforeDir="false" afterPath="$PROJECT_DIR$/globalInfluence.gexf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mentions.gephi" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/mentions.gexf" beforeDir="false" afterPath="$PROJECT_DIR$/mentions.gexf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mentions1.gephi" beforeDir="false" afterPath="$PROJECT_DIR$/mentions1.gephi" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pensional.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/pensional.ipynb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/similarity.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/similarity.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/users_afinity.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/users_afinity1.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/users_afinity2.gexf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/users_influence.gexf" beforeDir="false" afterPath="$PROJECT_DIR$/users_influence.gexf" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -26,6 +32,9 @@
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/venv/Lib/site-packages/sentence_transformers/cross_encoder/CrossEncoder.py" root0="SKIP_INSPECTION" />
   </component>
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="CurrentFile" />
@@ -80,8 +89,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-5c90d61e3bab-JavaScript-PY-242.22855.92" />
-        <option value="bundled-python-sdk-b068d85d1acf-399fe30bd8c1-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-242.22855.92" />
+        <option value="bundled-js-predefined-d6986cc7102b-5c90d61e3bab-JavaScript-PY-242.23339.19" />
+        <option value="bundled-python-sdk-0029f7779945-399fe30bd8c1-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-242.23339.19" />
       </set>
     </attachedChunks>
   </component>
@@ -120,7 +129,14 @@
       <workItem from="1727536636231" duration="1192000" />
       <workItem from="1727665209375" duration="581000" />
       <workItem from="1727790425580" duration="13856000" />
-      <workItem from="1727816308839" duration="5337000" />
+      <workItem from="1727816308839" duration="13862000" />
+      <workItem from="1727974125031" duration="9672000" />
+      <workItem from="1728045695789" duration="4754000" />
+      <workItem from="1728229537497" duration="3359000" />
+      <workItem from="1729092102054" duration="16000" />
+      <workItem from="1729092235227" duration="563000" />
+      <workItem from="1729092861898" duration="1573000" />
+      <workItem from="1729099314574" duration="8770000" />
     </task>
     <servers />
   </component>
@@ -132,7 +148,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="jupyter-line">
           <url>notebook://C:/Users/jujov/TG_code/similarity.ipynb</url>
-          <line>23</line>
+          <line>24</line>
           <option name="timeStamp" value="1" />
         </line-breakpoint>
       </breakpoints>
