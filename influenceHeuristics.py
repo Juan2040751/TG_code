@@ -192,21 +192,21 @@ def build_affinities_matrix(
     n = len(user_index)
     users_affinity: ndarray[ndarray[float]] = np.zeros((n, n), float)
 
-    for i, userInfluence in influence_df.iterrows():
-        user_idx_i: int = user_index[i]
-        for j, interPersonalInfluence in userInfluence.items():
+    for i, userInfluence in enumerate(influence_df):
+        #user_idx_i: int = user_index[i]
+        for j, interPersonalInfluence in enumerate(userInfluence):
             if interPersonalInfluence != 0:
-                user_idx_j: int = user_index[j]
+                #user_idx_j: int = user_index[j]
 
-                user_i_opinions = list(users_tweet_text[user_idx_i])
-                user_j_opinions = list(users_tweet_text[user_idx_j])
-                embeddings_user_i: List[float] = [get_embeddings(opinion, similarity_model) for opinion in
-                                                  user_i_opinions]
-                embeddings_user_j: List[float] = [get_embeddings(opinion, similarity_model) for opinion in
-                                                  user_j_opinions]
+                user_i_opinions = list(users_tweet_text[i])
+                user_j_opinions = list(users_tweet_text[j])
+                embeddings_user_i = np.array([get_embeddings(opinion, similarity_model) for opinion in
+                                                  user_i_opinions])
+                embeddings_user_j = np.array([get_embeddings(opinion, similarity_model) for opinion in
+                                                  user_j_opinions])
                 affinity_ij = []
 
-                if embeddings_user_i and embeddings_user_j:
+                if embeddings_user_i.size > 0 and embeddings_user_j.size > 0:
                     for index_i, opinions_similarity_i in enumerate(
                             similarity_model.similarity(embeddings_user_i, embeddings_user_j)):
                         opinion_i = user_i_opinions[index_i]
@@ -219,6 +219,6 @@ def build_affinities_matrix(
                             affinity_ij.append(opinion_affinity)
 
                     affinity_users_ij: float = sum(affinity_ij) / len(affinity_ij)
-                    users_affinity[user_idx_i, user_idx_j] = affinity_users_ij
+                    users_affinity[i, j] = affinity_users_ij
 
     return users_affinity

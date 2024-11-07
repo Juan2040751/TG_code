@@ -1,9 +1,10 @@
 import re
 from functools import cache
-from typing import List, Dict, Set
+from typing import List, Dict, Set, Tuple
 
 import emoji
 import pandas as pd
+from numpy import ndarray, number
 
 
 def preprocess_dataframe(df: pd.DataFrame) -> pd.DataFrame:
@@ -121,3 +122,38 @@ def get_polarity(text: str, sentiment_analyzer) -> float:
     NEG, NEU, POS = prediction.probas["NEG"], prediction.probas["NEU"], prediction.probas["POS"]
     polarity = round(POS - NEG, 3)
     return polarity
+
+
+def get_links_matrix(adjacency_matrix: ndarray, index_user: Dict[int, str]) -> List[Dict[str, float]]:
+    """
+    Convierte una matriz de adyacencia en una lista de enlaces (aristas) con los nodos fuente y destino,
+    incluyendo el valor de influencia.
+
+    Args:
+        adjacency_matrix (np.ndarray): Matriz de adyacencia que representa las relaciones de influencia entre usuarios.
+                                        Cada celda contiene el valor de la influencia de un nodo fuente a un nodo destino.
+        index_user (Dict[int, str]): Diccionario que mapea el índice de un nodo (entero) a su identificador (cadena).
+
+    Returns:
+        List[Dict[str, float]]: Lista de diccionarios que representa los enlaces de la red.
+                                Cada diccionario contiene:
+                                    - "source_id" (str): Identificador del nodo fuente.
+                                    - "target_id" (str): Identificador del nodo destino.
+                                    - "influence_value" (float): Valor de la influencia del nodo fuente sobre el nodo destino.
+    """
+    links = []
+
+    for influencer_id, user_influences in enumerate(adjacency_matrix):
+        source_id = index_user[influencer_id]  # Obtener el identificador del nodo fuente
+
+        for influenced_user_id, interpersonal_influence in enumerate(user_influences):
+            if interpersonal_influence:  # Solo considerar influencias no nulas
+                target_id = index_user[influenced_user_id]  # Obtener el identificador del nodo destino
+                link = {
+                    "source_id": source_id,
+                    "target_id": target_id,
+                    "influence_value": float(interpersonal_influence)  # Convertir el valor a float
+                }
+                links.append(link)
+
+    return links
