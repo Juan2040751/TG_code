@@ -5,11 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="68971e0c-dbaf-4bf6-8ed2-bbefd3510547" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/TG_code.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/TG_code.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/InfluenceNetwork.py" beforeDir="false" afterPath="$PROJECT_DIR$/InfluenceNetwork.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/influenceHeuristics.py" beforeDir="false" afterPath="$PROJECT_DIR$/influenceHeuristics.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/processData.py" beforeDir="false" afterPath="$PROJECT_DIR$/processData.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -29,6 +26,7 @@
   </component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/venv/Lib/site-packages/sentence_transformers/cross_encoder/CrossEncoder.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/venv/Lib/site-packages/sentence_transformers/util.py" root0="SKIP_INSPECTION" />
   </component>
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="CurrentFile" />
@@ -83,8 +81,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-5c90d61e3bab-JavaScript-PY-242.23339.19" />
-        <option value="bundled-python-sdk-0029f7779945-399fe30bd8c1-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-242.23339.19" />
+        <option value="bundled-js-predefined-d6986cc7102b-5c90d61e3bab-JavaScript-PY-242.23726.102" />
+        <option value="bundled-python-sdk-5e1850174b45-399fe30bd8c1-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-242.23726.102" />
       </set>
     </attachedChunks>
   </component>
@@ -143,7 +141,9 @@
       <workItem from="1730553699123" duration="5229000" />
       <workItem from="1730846184381" duration="12814000" />
       <workItem from="1730925815843" duration="11570000" />
-      <workItem from="1730944130779" duration="741000" />
+      <workItem from="1730944130779" duration="1205000" />
+      <workItem from="1730991209812" duration="688000" />
+      <workItem from="1730991998675" duration="6264000" />
     </task>
     <servers />
   </component>

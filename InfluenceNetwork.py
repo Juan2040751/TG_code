@@ -5,7 +5,8 @@ from fastapi import FastAPI, UploadFile
 from pysentimiento import create_analyzer
 from sentence_transformers import SentenceTransformer
 
-from influenceHeuristics import build_mentions_matrix, identify_nodes
+from influenceHeuristics import build_mentions_matrix, identify_nodes, build_global_influence_matrix, \
+    build_local_influence_matrix, build_affinities_matrix
 from processData import preprocess_dataframe, build_users_tweet_text, get_links_matrix
 
 app = FastAPI()
@@ -28,28 +29,27 @@ def build_influence_networks(df: pd.DataFrame, users_tweet_text, user_index, ind
 
     # Construir la matriz de menciones
     mentions_matrix = build_mentions_matrix(df, user_index)
-    """
+
     # Construir la matriz de influencia global y local
     global_influence_matrix, global_influence = build_global_influence_matrix(df, user_index, mentions_matrix)
+
     local_influence_matrix = build_local_influence_matrix(df, user_index, global_influence)
-
-
 
     # Construir matrices de afinidad global y local
     affinities_global_matrix = build_affinities_matrix(global_influence_matrix, user_index, users_tweet_text,
                                                        similarity_model, sentiment_analyzer)
+
     affinities_local_matrix = build_affinities_matrix(local_influence_matrix, user_index, users_tweet_text,
                                                       similarity_model, sentiment_analyzer)
-    """
 
     # Convertir las matrices a listas para poder devolverlas en formato JSON
 
     return {
         "mentions_links": get_links_matrix(mentions_matrix, index_user),
-        # "global_influence_matrix": global_influence_matrix.tolist(),
-        # "local_influence_matrix": local_influence_matrix.tolist(),
-        # "affinities_global_matrix": affinities_global_matrix.tolist(),
-        # "affinities_local_matrix": affinities_local_matrix.tolist(),
+        "global_influence_links": get_links_matrix(global_influence_matrix, index_user),
+        "local_influence_matrix": get_links_matrix(local_influence_matrix, index_user),
+        "affinities_global_matrix": get_links_matrix(affinities_global_matrix, index_user),
+        "affinities_local_matrix": get_links_matrix(affinities_local_matrix, index_user),
     }
 
 
@@ -67,5 +67,6 @@ async def process_csv(file: UploadFile):
     # Construir textos de los tweets por usuario
     users_tweet_text = build_users_tweet_text(df, user_index)
 
-    result = build_influence_networks(df, users_tweet_text, user_index, index_user)  # Llamar a la función que procesa los datos
+    result = build_influence_networks(df, users_tweet_text, user_index,
+                                      index_user)  # Llamar a la función que procesa los datos
     return result  # Devolver el resultado en formato JSON
