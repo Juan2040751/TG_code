@@ -1,10 +1,13 @@
 import re
 from functools import cache
-from typing import List, Dict, Set, Tuple
+from typing import List, Dict, Set
 
 import emoji
 import pandas as pd
-from numpy import ndarray, number
+from dotenv import dotenv_values
+from numpy import ndarray
+from openai import OpenAI
+from pydantic import BaseModel
 
 
 def preprocess_dataframe(df: pd.DataFrame) -> pd.DataFrame:
@@ -50,7 +53,7 @@ def clean_text(text: str) -> str:
 def build_users_tweet_text(
         df: pd.DataFrame,
         user_index: Dict[str, int]
-) -> List[Set[str]]:
+) -> List[List[str]]:
     """
     Construye una lista de sets de opiniones de cada usuario preprocesadas.
 
@@ -90,7 +93,7 @@ def build_users_tweet_text(
             users_tweet_text[author_idx].add(clean_text(row['text']))
             continue
 
-    return users_tweet_text
+    return list(map(lambda user_texts: list(user_texts), users_tweet_text))
 
 
 @cache
@@ -150,10 +153,39 @@ def get_links_matrix(adjacency_matrix: ndarray, index_user: Dict[int, str]) -> L
             if interpersonal_influence:  # Solo considerar influencias no nulas
                 target_id = index_user[influenced_user_id]  # Obtener el identificador del nodo destino
                 link = {
-                    "source_id": source_id,
-                    "target_id": target_id,
-                    "influence_value": float(interpersonal_influence)  # Convertir el valor a float
+                    "source": source_id,
+                    "target": target_id,
+                    "influenceValue": float(interpersonal_influence)  # Convertir el valor a float
                 }
                 links.append(link)
 
     return links
+
+
+openIAKey = dotenv_values(".env")["OPENAI_API_KEY"]
+client = OpenAI(api_key=openIAKey)
+
+
+class Stance(BaseModel):
+    value: float
+
+
+
+
+
+def calculate_stance(users_tweet_text: list[List[str]], users:List[str], prompt: str) -> Dict[str, float]:
+    def stanceDetection(opinions)-> float:
+        completion = client.beta.chat.completions.parse(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": prompt},
+                {
+                    "role": "user",
+                    "content": str(opinions)
+                }
+            ],
+            response_format=Stance,
+        )
+
+        return completion.choices[0].message.content
+    return {user: stanceDetection(users_tweet_text[index]) for index, user in enumerate(users) if users_tweet_text[index]}

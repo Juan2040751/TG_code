@@ -21,7 +21,7 @@ def get_mentions_list(tweet_entities: str) -> List[str]:
     return [mention['username'] for mention in literal_eval(tweet_entities).get("mentions", [])]
 
 
-def identify_nodes(df: pd.DataFrame) -> Set[str]:
+def identify_nodes(df: pd.DataFrame) -> List[str]:
     """
     Identifica los nodos únicos en el DataFrame a partir de los autores y menciones en los tweets.
 
@@ -41,7 +41,7 @@ def identify_nodes(df: pd.DataFrame) -> Set[str]:
     # Remover posibles valores vacíos del conjunto
     users.discard("")
 
-    return users
+    return list(users)
 
 
 def build_mentions_matrix(
@@ -171,11 +171,9 @@ def build_local_influence_matrix(
 
 
 def build_affinities_matrix(
-        influence_df: pd.DataFrame,
         user_index: Dict[str, int],
         users_tweet_text: List[set[str]],
-        similarity_model,
-        sentiment_analyzer
+        similarity_model
 ) -> ndarray[ndarray[float]]:
     """
     Calcula la afinidad entre usuarios basándose en similitudes de opiniones y polaridades.
@@ -192,12 +190,9 @@ def build_affinities_matrix(
     n = len(user_index)
     users_affinity: ndarray[ndarray[float]] = np.zeros((n, n), float)
 
-    for i, userInfluence in enumerate(influence_df):
+    for i in range(n):
         #user_idx_i: int = user_index[i]
-        for j, interPersonalInfluence in enumerate(userInfluence):
-            if interPersonalInfluence != 0:
-                #user_idx_j: int = user_index[j]
-
+        for j in range(n):
                 user_i_opinions = list(users_tweet_text[i])
                 user_j_opinions = list(users_tweet_text[j])
                 embeddings_user_i = np.array([get_embeddings(opinion, similarity_model) for opinion in
@@ -210,12 +205,12 @@ def build_affinities_matrix(
                     for index_i, opinions_similarity_i in enumerate(
                             similarity_model.similarity(embeddings_user_i, embeddings_user_j)):
                         opinion_i = user_i_opinions[index_i]
-                        opinion_polarity_i = get_polarity(opinion_i, sentiment_analyzer)
+                        #opinion_polarity_i = get_polarity(opinion_i, sentiment_analyzer)
                         for index_j, opinion_similarity_ij in enumerate(opinions_similarity_i):
                             opinion_j = user_j_opinions[index_j]
-                            opinion_polarity_j = get_polarity(opinion_j, sentiment_analyzer)
-                            polarity_similarity = (2 - abs(opinion_polarity_i - opinion_polarity_j)) / 2
-                            opinion_affinity = opinion_similarity_ij * polarity_similarity
+                            #opinion_polarity_j = get_polarity(opinion_j, sentiment_analyzer)
+                            #polarity_similarity = (2 - abs(opinion_polarity_i - opinion_polarity_j)) / 2
+                            opinion_affinity = opinion_similarity_ij #* polarity_similarity
                             affinity_ij.append(opinion_affinity)
 
                     affinity_users_ij: float = sum(affinity_ij) / len(affinity_ij)

@@ -1,72 +1,100 @@
+import base64
+from io import StringIO
 from typing import Dict
 
 import pandas as pd
-from fastapi import FastAPI, UploadFile
-from pysentimiento import create_analyzer
-from sentence_transformers import SentenceTransformer
+from flask import Flask
+from flask_cors import CORS
+from flask_socketio import SocketIO, emit
 
-from influenceHeuristics import build_mentions_matrix, identify_nodes, build_global_influence_matrix, \
-    build_local_influence_matrix, build_affinities_matrix
+from influenceHeuristics import (
+    build_mentions_matrix, identify_nodes, build_global_influence_matrix,
+    build_local_influence_matrix
+)
 from processData import preprocess_dataframe, build_users_tweet_text, get_links_matrix
 
-app = FastAPI()
+app = Flask(__name__)
+CORS(app)
+socketio = SocketIO(app, cors_allowed_origins="*", max_http_buffer_size=10000000)
+
 
 # Inicialización del modelo y el analizador de sentimiento
-similarity_model = SentenceTransformer('jaimevera1107/all-MiniLM-L6-v2-similarity-es')
-sentiment_analyzer = create_analyzer(task="sentiment", lang="es")
+# similarity_model = SentenceTransformer('jaimevera1107/all-MiniLM-L6-v2-similarity-es')
+# sentiment_analyzer = create_analyzer(task="sentiment", lang="es")
 
 
 def build_influence_networks(df: pd.DataFrame, users_tweet_text, user_index, index_user) -> Dict[str, dict]:
-    """
-    Construye las redes de influencia a partir de un DataFrame.
-
-    Args:
-        df (pd.DataFrame): DataFrame con los datos de tweets.
-
-    Returns:
-        Dict[str, dict]: Diccionario que contiene las matrices y redes de influencia.
-    """
-
-    # Construir la matriz de menciones
     mentions_matrix = build_mentions_matrix(df, user_index)
+    emit("influence_heuristic", {"mentions_links": get_links_matrix(mentions_matrix, index_user)}, broadcast=False)
 
-    # Construir la matriz de influencia global y local
     global_influence_matrix, global_influence = build_global_influence_matrix(df, user_index, mentions_matrix)
+    emit("influence_heuristic", {"global_influence_links": get_links_matrix(global_influence_matrix, index_user)},
+         broadcast=False)
 
     local_influence_matrix = build_local_influence_matrix(df, user_index, global_influence)
+    emit("influence_heuristic", {"local_influence_links": get_links_matrix(local_influence_matrix, index_user)},
+         broadcast=False)
 
-    # Construir matrices de afinidad global y local
-    affinities_global_matrix = build_affinities_matrix(global_influence_matrix, user_index, users_tweet_text,
-                                                       similarity_model, sentiment_analyzer)
-
-    affinities_local_matrix = build_affinities_matrix(local_influence_matrix, user_index, users_tweet_text,
-                                                      similarity_model, sentiment_analyzer)
-
-    # Convertir las matrices a listas para poder devolverlas en formato JSON
-
+    # affinities_global_matrix = build_affinities_matrix(global_influence_matrix, user_index, users_tweet_text,
+    #                                                   similarity_model, sentiment_analyzer)
+    """
     return {
-        "mentions_links": get_links_matrix(mentions_matrix, index_user),
-        "global_influence_links": get_links_matrix(global_influence_matrix, index_user),
-        "local_influence_matrix": get_links_matrix(local_influence_matrix, index_user),
-        "affinities_global_matrix": get_links_matrix(affinities_global_matrix, index_user),
-        "affinities_local_matrix": get_links_matrix(affinities_local_matrix, index_user),
-    }
+            "mentions_links": get_links_matrix(mentions_matrix, index_user),
+            "global_influence_links": get_links_matrix(global_influence_matrix, index_user),
+            "local_influence_matrix": get_links_matrix(local_influence_matrix, index_user),
+            "affinities_global_matrix": get_links_matrix(affinities_global_matrix, index_user),
+            "affinities_local_matrix": get_links_matrix(affinities_local_matrix, index_user),
+        }
+    """
 
 
-@app.post("/influenceGraph/")
-async def process_csv(file: UploadFile):
-    df = pd.read_csv(file.file)  # Leer el CSV desde la consulta HTTP
+@socketio.on('influenceGraph')
+def process_csv(message):
+    print("influenceGraph")
+    # Suponiendo que el CSV llega como una cadena en el mensaje
+    csv_data = message.get('csv_data')  # El cliente debe enviar el CSV en base64
+    csv_data = base64.b64decode(csv_data).decode('utf-8')
+    print("csv recibido")
+    df = pd.read_csv(StringIO(csv_data))
 
     # Preprocesar el DataFrame
     df = preprocess_dataframe(df)
 
     # Identificar los nodos (usuarios) únicos y crear índices de usuario
     users = identify_nodes(df)
+    emit("users", list(users), broadcast=False)
+
     user_index: Dict[str, int] = {user: idx for idx, user in enumerate(users)}
     index_user: Dict[int, str] = {index: user for user, index in user_index.items()}
-    # Construir textos de los tweets por usuario
     users_tweet_text = build_users_tweet_text(df, user_index)
 
-    result = build_influence_networks(df, users_tweet_text, user_index,
-                                      index_user)  # Llamar a la función que procesa los datos
-    return result  # Devolver el resultado en formato JSON
+    topic = "La reforma pensional en Colombia"
+    topic_context = (
+        "El gobierno del presidente Gustavo Petro presentó un proyecto de ley para reformar el sistema pensional, "
+        "el cual fue aprobado con el apoyo de algunos sectores y cuestionado por otros.")
+
+    prompt = (
+        f"Eres un analista experto e imparcial en {topic}. Tu tarea es medir la postura de un usuario frente a este tema en un rango continuo entre 0 y 1, donde: "
+        f"0 = Férreamente en contra, 1 = Reciamente a favor, 0.5 = Neutral, "
+        f"0.25 = Oposición moderada (reconoce o no está enfáticamente indispuesto a reconocer aspectos positivos), "
+        f"0.75 = Apoyo moderado (reconoce o está predispuesto a reconocer objeciones)."
+        f"Contexto: \"{topic_context}\" "
+        "Entrada: Opiniones del usuario desde una red social"
+        "Instrucciones: "
+        "1. Analiza la postura general en cada opinión"
+        "2. Calcula la proporción de frases a favor vs. en contra del tema"
+        "3. Emociones explícitas directas hacia el tema refuerzan la postura (más emoción positiva = postura cercana a 1; negativa = cercana a 0). "
+        "4. Pondera adjetivos y adverbios utilizados para expresar alguna postura frente al tema"
+        "5. Conectores de oposición indican postura moderada. Ej: 'aunque no es perfecta, la reforma pensional es un paso positivo' o 'a pesar de las críticas, tiene aspectos rescatables'"
+        "6. Los adverbios de cantidad indican posturas extremas, y los de duda, posturas moderadas"
+        f"Salida esperada: Un número decimal entre 0 y 1, con dos decimales, como 0.21, 0.75 o 0.03, representando la postura general del usuario frente a {topic}.")
+
+    # Construir las redes de influencia
+    build_influence_networks(df, users_tweet_text, user_index, index_user)
+
+    # Enviar el resultado al cliente
+    # emit('influenceGraphResponse', result)
+
+
+if __name__ == '__main__':
+    socketio.run(app, debug=True)
