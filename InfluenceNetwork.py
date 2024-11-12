@@ -11,7 +11,7 @@ from influenceHeuristics import (
     build_mentions_matrix, identify_nodes, build_global_influence_matrix,
     build_local_influence_matrix
 )
-from processData import preprocess_dataframe, build_users_tweet_text, get_links_matrix
+from processData import preprocess_dataframe, build_users_tweet_text, get_links_matrix, calculate_stance
 
 app = Flask(__name__)
 CORS(app)
@@ -23,17 +23,21 @@ socketio = SocketIO(app, cors_allowed_origins="*", max_http_buffer_size=10000000
 # sentiment_analyzer = create_analyzer(task="sentiment", lang="es")
 
 
-def build_influence_networks(df: pd.DataFrame, users_tweet_text, user_index, index_user) -> Dict[str, dict]:
+def build_influence_networks(df: pd.DataFrame, users_tweet_text, user_index, index_user, users, prompt) -> Dict[str, dict]:
     mentions_matrix = build_mentions_matrix(df, user_index)
     emit("influence_heuristic", {"mentions_links": get_links_matrix(mentions_matrix, index_user)}, broadcast=False)
 
-    global_influence_matrix, global_influence = build_global_influence_matrix(df, user_index, mentions_matrix)
+    global_influence_matrix, global_influence = build_global_influence_matrix(df, user_index)
     emit("influence_heuristic", {"global_influence_links": get_links_matrix(global_influence_matrix, index_user)},
          broadcast=False)
 
     local_influence_matrix = build_local_influence_matrix(df, user_index, global_influence)
     emit("influence_heuristic", {"local_influence_links": get_links_matrix(local_influence_matrix, index_user)},
          broadcast=False)
+
+
+    stances = calculate_stance(users_tweet_text, users, prompt)
+    emit("stance_heuristic", stances, broadcast=False)
 
     # affinities_global_matrix = build_affinities_matrix(global_influence_matrix, user_index, users_tweet_text,
     #                                                   similarity_model, sentiment_analyzer)
@@ -50,8 +54,6 @@ def build_influence_networks(df: pd.DataFrame, users_tweet_text, user_index, ind
 
 @socketio.on('influenceGraph')
 def process_csv(message):
-    print("influenceGraph")
-    # Suponiendo que el CSV llega como una cadena en el mensaje
     csv_data = message.get('csv_data')  # El cliente debe enviar el CSV en base64
     csv_data = base64.b64decode(csv_data).decode('utf-8')
     print("csv recibido")
@@ -89,8 +91,10 @@ def process_csv(message):
         "6. Los adverbios de cantidad indican posturas extremas, y los de duda, posturas moderadas"
         f"Salida esperada: Un número decimal entre 0 y 1, con dos decimales, como 0.21, 0.75 o 0.03, representando la postura general del usuario frente a {topic}.")
 
+
+
     # Construir las redes de influencia
-    build_influence_networks(df, users_tweet_text, user_index, index_user)
+    build_influence_networks(df, users_tweet_text, user_index, index_user, users, prompt)
 
     # Enviar el resultado al cliente
     # emit('influenceGraphResponse', result)

@@ -1,9 +1,10 @@
 from ast import literal_eval
 from typing import List, Dict, Set, Tuple
-
 import numpy as np
 import pandas as pd
 from numpy import ndarray
+from time import time
+from datetime import timedelta
 
 from processData import get_embeddings, get_polarity
 
@@ -43,10 +44,16 @@ def identify_nodes(df: pd.DataFrame) -> List[str]:
 
     return list(users)
 
-
+def normalization_min_max(matrix: ndarray) -> ndarray:
+    min_value = matrix.min()
+    max_value = matrix.max()
+    if max_value > min_value:  # Evitar división por cero
+        matrix = (matrix - min_value) / (max_value - min_value)
+    return matrix
 def build_mentions_matrix(
         df: pd.DataFrame,
-        user_index: Dict[str, int]
+        user_index: Dict[str, int],
+        normalize: bool = True
 ) -> ndarray[int]:
     """
     Construye una matriz de menciones que cuantifica las interacciones entre usuarios.
@@ -82,13 +89,15 @@ def build_mentions_matrix(
             if mentioned_user_idx is not None and author_idx is not None:
                 mentions_matrix[mentioned_user_idx, author_idx] += 1
 
-    return mentions_matrix
+    # Normalización Min-Max
+    if normalize:
+        mentions_matrix = normalization_min_max(mentions_matrix)
+    return np.round(mentions_matrix, 3)
 
 
 def build_global_influence_matrix(
         df: pd.DataFrame,
-        user_index: Dict[str, int],
-        mentions_matrix: ndarray[int]
+        user_index: Dict[str, int]
 ) -> Tuple[ndarray[ndarray[int]], ndarray[int]]:
     """
     Calcula la influencia global de cada usuario en función de métricas ponderadas de interacción
@@ -106,11 +115,9 @@ def build_global_influence_matrix(
     global_influence: ndarray[int] = np.ones(n, dtype=int)
 
     metrics_keys = ['retweet_count', 'reply_count', 'like_count', 'quote_count', 'bookmarks_count', 'impressions_count']
-
     for _, row in df.iterrows():
         author = row['author_username']
         author_idx = user_index.get(author)
-
         if author_idx is not None:
             # Extraer métricas de interacción del tweet
             tweet_metrics = literal_eval(row['public_metrics'])
@@ -120,21 +127,23 @@ def build_global_influence_matrix(
 
             # Calcular la influencia global ponderada para el usuario actual
             global_influence[author_idx] += (
-                    3 * (n_retweets + n_quotes + n_replies) +
-                    2 * (n_likes + n_bookmarks) +
-                    n_impressions + 1
+                    .4 * (n_retweets + n_quotes + n_replies) +
+                    .3 * (n_likes + n_bookmarks) +
+                    .2 * n_impressions + .1
             )
-
+    mentions_matrix = build_mentions_matrix(df, user_index, normalize=False)
     # Multiplicar la matriz de menciones por la influencia global de cada usuario
-    global_influence_matrix: ndarray[ndarray[int]] = mentions_matrix * global_influence[:, np.newaxis]
+    global_influence_matrix: ndarray[ndarray[float]] = mentions_matrix * global_influence[:, np.newaxis]
 
-    return global_influence_matrix, global_influence
+    # Normalización Min-Max
+    global_influence_matrix = normalization_min_max(global_influence_matrix)
+    return np.round(global_influence_matrix, 3), global_influence
 
 
 def build_local_influence_matrix(
         df: pd.DataFrame,
         user_index: Dict[str, int],
-        global_influence: np.ndarray[int]
+        global_influence: np.ndarray[float]
 ) -> np.ndarray[ndarray[float]]:
     """
     Calcula la influencia local de cada usuario en función de su influencia global y las conexiones con
@@ -148,7 +157,7 @@ def build_local_influence_matrix(
     Devuelve:
         np.ndarray: Matriz de influencia local (n x n) ajustada por la influencia local de cada usuario.
     """
-    mentions_matrix = build_mentions_matrix(df, user_index)
+    mentions_matrix = build_mentions_matrix(df, user_index, normalize=False)
 
     n = len(user_index)
     local_influence: ndarray[float] = np.ones(n, dtype=float)
@@ -161,13 +170,15 @@ def build_local_influence_matrix(
         # Calcular la proporción de influencia local
         local_influence[i] = (
             global_influence[i] / (community_influence + global_influence[i])
-            if community_influence else 0
+            if community_influence + global_influence[i] else 0
         )
 
     # Crear la matriz de influencia local
     local_influence_matrix: ndarray[ndarray[float]] = mentions_matrix * local_influence[:, np.newaxis]
 
-    return local_influence_matrix
+    # Normalización Min-Max
+    local_influence_matrix = normalization_min_max(local_influence_matrix)
+    return np.round(local_influence_matrix, 3)
 
 
 def build_affinities_matrix(

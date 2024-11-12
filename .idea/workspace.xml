@@ -5,12 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="68971e0c-dbaf-4bf6-8ed2-bbefd3510547" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/TG_code.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/TG_code.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/user_stances.csv" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/InfluenceNetwork.py" beforeDir="false" afterPath="$PROJECT_DIR$/InfluenceNetwork.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/influenceHeuristics.py" beforeDir="false" afterPath="$PROJECT_DIR$/influenceHeuristics.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/processData.py" beforeDir="false" afterPath="$PROJECT_DIR$/processData.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -43,6 +42,7 @@
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/venv/Lib/site-packages/flask_socketio/__init__.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/venv/Lib/site-packages/sentence_transformers/cross_encoder/CrossEncoder.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/venv/Lib/site-packages/sentence_transformers/util.py" root0="SKIP_INSPECTION" />
   </component>
@@ -181,7 +181,9 @@
       <workItem from="1730991209812" duration="688000" />
       <workItem from="1730991998675" duration="6311000" />
       <workItem from="1731166852601" duration="19063000" />
-      <workItem from="1731252476355" duration="4338000" />
+      <workItem from="1731252476355" duration="17396000" />
+      <workItem from="1731335829222" duration="18000" />
+      <workItem from="1731338572852" duration="25236000" />
     </task>
     <servers />
   </component>

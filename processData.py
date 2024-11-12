@@ -1,14 +1,18 @@
+import csv
 import re
+import time
+from ast import literal_eval
 from functools import cache
 from typing import List, Dict, Set
 
 import emoji
+import openai
 import pandas as pd
 from dotenv import dotenv_values
 from numpy import ndarray
 from openai import OpenAI
 from pydantic import BaseModel
-
+from openai import OpenAIError, APIConnectionError
 
 def preprocess_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -127,7 +131,7 @@ def get_polarity(text: str, sentiment_analyzer) -> float:
     return polarity
 
 
-def get_links_matrix(adjacency_matrix: ndarray, index_user: Dict[int, str]) -> List[Dict[str, float]]:
+def get_links_matrix(adjacency_matrix: ndarray, index_user: Dict[float| int, str]) -> List[Dict[str, float]]:
     """
     Convierte una matriz de adyacencia en una lista de enlaces (aristas) con los nodos fuente y destino,
     incluyendo el valor de influencia.
@@ -150,12 +154,12 @@ def get_links_matrix(adjacency_matrix: ndarray, index_user: Dict[int, str]) -> L
         source_id = index_user[influencer_id]  # Obtener el identificador del nodo fuente
 
         for influenced_user_id, interpersonal_influence in enumerate(user_influences):
-            if interpersonal_influence:  # Solo considerar influencias no nulas
+            if interpersonal_influence > 0:  # Solo considerar influencias no nulas
                 target_id = index_user[influenced_user_id]  # Obtener el identificador del nodo destino
                 link = {
                     "source": source_id,
                     "target": target_id,
-                    "influenceValue": float(interpersonal_influence)  # Convertir el valor a float
+                    "influenceValue": round(float(interpersonal_influence), 3)  # Convertir el valor a float
                 }
                 links.append(link)
 
@@ -173,19 +177,58 @@ class Stance(BaseModel):
 
 
 
-def calculate_stance(users_tweet_text: list[List[str]], users:List[str], prompt: str) -> Dict[str, float]:
-    def stanceDetection(opinions)-> float:
-        completion = client.beta.chat.completions.parse(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": prompt},
-                {
-                    "role": "user",
-                    "content": str(opinions)
-                }
-            ],
-            response_format=Stance,
-        )
+def calculate_stance(users_tweet_text: list[List[str]], users: List[str], prompt: str) -> Dict[str, float]:
+    def stanceDetection(opinions: List[str]) -> float:
+        max_retries = 3
+        delay = 2  # segundos entre reintentos
 
-        return completion.choices[0].message.content
-    return {user: stanceDetection(users_tweet_text[index]) for index, user in enumerate(users) if users_tweet_text[index]}
+        for attempt in range(max_retries):
+            try:
+                completion = client.beta.chat.completions.parse(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": prompt},
+                        {
+                            "role": "user",
+                            "content": str(opinions)
+                        }
+                    ],
+                    response_format=Stance,
+                )
+                return literal_eval(completion.choices[0].message.content)["value"]
+            except APIConnectionError as e:
+                print(f"Connection error on attempt {attempt + 1}/{max_retries}: {e}")
+                time.sleep(delay)
+            except OpenAIError as e:
+                print(f"OpenAI API error: {e}")
+                break
+        return 0.0
+
+    def save_stance_to_cache(user: str, stance: float):
+        """Guarda la postura de un usuario en el archivo CSV."""
+        with open(CACHE_FILE, mode="a", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow([user, stance])
+
+    CACHE_FILE = "user_stances.csv"
+    cached_stances = {}
+    with open(CACHE_FILE, mode="r", newline="") as file:
+        reader = csv.reader(file)
+        for row in reader:
+            user, stance = row
+            cached_stances[user] = float(stance)
+
+    print(cached_stances.__len__())
+    stances = {}
+
+    for index, user in enumerate(users):
+        if user in cached_stances:
+            # Usar la postura en caché si existe
+            stances[user] = cached_stances[user]
+        else:
+            # Obtener la postura y guardarla en caché
+            stance = stanceDetection(users_tweet_text[index])
+            stances[user] = stance
+            save_stance_to_cache(user, stance)
+            print(stances.__len__())
+    return stances
