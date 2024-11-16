@@ -5,7 +5,6 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="68971e0c-dbaf-4bf6-8ed2-bbefd3510547" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/user_stances.csv" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/InfluenceNetwork.py" beforeDir="false" afterPath="$PROJECT_DIR$/InfluenceNetwork.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/influenceHeuristics.py" beforeDir="false" afterPath="$PROJECT_DIR$/influenceHeuristics.py" afterDir="false" />
@@ -184,6 +183,14 @@
       <workItem from="1731252476355" duration="17396000" />
       <workItem from="1731335829222" duration="18000" />
       <workItem from="1731338572852" duration="25236000" />
+      <workItem from="1731419122479" duration="2400000" />
+      <workItem from="1731453320785" duration="12677000" />
+      <workItem from="1731503558326" duration="99000" />
+      <workItem from="1731529460892" duration="10511000" />
+      <workItem from="1731600230028" duration="11163000" />
+      <workItem from="1731676331767" duration="2927000" />
+      <workItem from="1731699418410" duration="643000" />
+      <workItem from="1731707031258" duration="542000" />
     </task>
     <servers />
   </component>

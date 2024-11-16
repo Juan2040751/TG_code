@@ -130,41 +130,43 @@ def get_polarity(text: str, sentiment_analyzer) -> float:
     polarity = round(POS - NEG, 3)
     return polarity
 
+def create_link_processor(index_user: Dict[float| int, str]):
+    def get_links_matrix(adjacency_matrix: ndarray, mentions_matrix_date: ndarray[ndarray[List[str]]] = None) -> List[Dict[str, float]]:
+        """
+        Convierte una matriz de adyacencia en una lista de enlaces (aristas) con los nodos fuente y destino,
+        incluyendo el valor de influencia.
 
-def get_links_matrix(adjacency_matrix: ndarray, index_user: Dict[float| int, str]) -> List[Dict[str, float]]:
-    """
-    Convierte una matriz de adyacencia en una lista de enlaces (aristas) con los nodos fuente y destino,
-    incluyendo el valor de influencia.
+        Args:
+            adjacency_matrix (np.ndarray): Matriz de adyacencia que representa las relaciones de influencia entre usuarios.
+                                            Cada celda contiene el valor de la influencia de un nodo fuente a un nodo destino.
+            index_user (Dict[int, str]): Diccionario que mapea el índice de un nodo (entero) a su identificador (cadena).
 
-    Args:
-        adjacency_matrix (np.ndarray): Matriz de adyacencia que representa las relaciones de influencia entre usuarios.
-                                        Cada celda contiene el valor de la influencia de un nodo fuente a un nodo destino.
-        index_user (Dict[int, str]): Diccionario que mapea el índice de un nodo (entero) a su identificador (cadena).
+        Returns:
+            List[Dict[str, float]]: Lista de diccionarios que representa los enlaces de la red.
+                                    Cada diccionario contiene:
+                                        - "source_id" (str): Identificador del nodo fuente.
+                                        - "target_id" (str): Identificador del nodo destino.
+                                        - "influence_value" (float): Valor de la influencia del nodo fuente sobre el nodo destino.
+        """
+        links = []
 
-    Returns:
-        List[Dict[str, float]]: Lista de diccionarios que representa los enlaces de la red.
-                                Cada diccionario contiene:
-                                    - "source_id" (str): Identificador del nodo fuente.
-                                    - "target_id" (str): Identificador del nodo destino.
-                                    - "influence_value" (float): Valor de la influencia del nodo fuente sobre el nodo destino.
-    """
-    links = []
+        for influencer_id, user_influences in enumerate(adjacency_matrix):
+            source_id = index_user[influencer_id]  # Obtener el identificador del nodo fuente
 
-    for influencer_id, user_influences in enumerate(adjacency_matrix):
-        source_id = index_user[influencer_id]  # Obtener el identificador del nodo fuente
+            for influenced_user_id, interpersonal_influence in enumerate(user_influences):
+                if interpersonal_influence > 0:  # Solo considerar influencias no nulas
+                    target_id = index_user[influenced_user_id]  # Obtener el identificador del nodo destino
+                    link = {
+                        "source": source_id,
+                        "target": target_id,
+                        "influenceValue": round(float(interpersonal_influence), 3)  # Convertir el valor a float
+                    }
+                    if mentions_matrix_date is not None:
+                        link["date"] = mentions_matrix_date[influencer_id, influenced_user_id]
+                    links.append(link)
 
-        for influenced_user_id, interpersonal_influence in enumerate(user_influences):
-            if interpersonal_influence > 0:  # Solo considerar influencias no nulas
-                target_id = index_user[influenced_user_id]  # Obtener el identificador del nodo destino
-                link = {
-                    "source": source_id,
-                    "target": target_id,
-                    "influenceValue": round(float(interpersonal_influence), 3)  # Convertir el valor a float
-                }
-                links.append(link)
-
-    return links
-
+        return links
+    return get_links_matrix
 
 openIAKey = dotenv_values(".env")["OPENAI_API_KEY"]
 client = OpenAI(api_key=openIAKey)

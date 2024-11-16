@@ -6,12 +6,14 @@ import pandas as pd
 from flask import Flask
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
+from sympy.physics.units import percent
 
 from influenceHeuristics import (
     build_mentions_matrix, identify_nodes, build_global_influence_matrix,
-    build_local_influence_matrix
+    build_local_influence_matrix, build_affinities_matrix
 )
-from processData import preprocess_dataframe, build_users_tweet_text, get_links_matrix, calculate_stance
+from processData import preprocess_dataframe, build_users_tweet_text, calculate_stance, \
+    create_link_processor
 
 app = Flask(__name__)
 CORS(app)
@@ -19,37 +21,29 @@ socketio = SocketIO(app, cors_allowed_origins="*", max_http_buffer_size=10000000
 
 
 # Inicialización del modelo y el analizador de sentimiento
-# similarity_model = SentenceTransformer('jaimevera1107/all-MiniLM-L6-v2-similarity-es')
 # sentiment_analyzer = create_analyzer(task="sentiment", lang="es")
 
 
 def build_influence_networks(df: pd.DataFrame, users_tweet_text, user_index, index_user, users, prompt) -> Dict[str, dict]:
-    mentions_matrix = build_mentions_matrix(df, user_index)
-    emit("influence_heuristic", {"mentions_links": get_links_matrix(mentions_matrix, index_user)}, broadcast=False)
+    get_links_matrix = create_link_processor(index_user)
+    mentions_matrix, mentions_matrix_date = build_mentions_matrix(df, user_index)
+    emit("influence_heuristic", {"mentions_links": get_links_matrix(mentions_matrix, mentions_matrix_date)}, broadcast=False)
 
     global_influence_matrix, global_influence = build_global_influence_matrix(df, user_index)
-    emit("influence_heuristic", {"global_influence_links": get_links_matrix(global_influence_matrix, index_user)},
+    emit("influence_heuristic", {"global_influence_links": get_links_matrix(global_influence_matrix, mentions_matrix_date)},
          broadcast=False)
 
     local_influence_matrix = build_local_influence_matrix(df, user_index, global_influence)
-    emit("influence_heuristic", {"local_influence_links": get_links_matrix(local_influence_matrix, index_user)},
+    emit("influence_heuristic", {"local_influence_links": get_links_matrix(local_influence_matrix, mentions_matrix_date)},
          broadcast=False)
 
 
     stances = calculate_stance(users_tweet_text, users, prompt)
     emit("stance_heuristic", stances, broadcast=False)
 
-    # affinities_global_matrix = build_affinities_matrix(global_influence_matrix, user_index, users_tweet_text,
-    #                                                   similarity_model, sentiment_analyzer)
-    """
-    return {
-            "mentions_links": get_links_matrix(mentions_matrix, index_user),
-            "global_influence_links": get_links_matrix(global_influence_matrix, index_user),
-            "local_influence_matrix": get_links_matrix(local_influence_matrix, index_user),
-            "affinities_global_matrix": get_links_matrix(affinities_global_matrix, index_user),
-            "affinities_local_matrix": get_links_matrix(affinities_local_matrix, index_user),
-        }
-    """
+    affinities_matrix = build_affinities_matrix(users_tweet_text, stances, index_user)
+    emit("influence_heuristic", {"affinities_links": get_links_matrix(affinities_matrix)},
+         broadcast=False)
 
 
 @socketio.on('influenceGraph')
@@ -69,7 +63,7 @@ def process_csv(message):
     user_index: Dict[str, int] = {user: idx for idx, user in enumerate(users)}
     index_user: Dict[int, str] = {index: user for user, index in user_index.items()}
     users_tweet_text = build_users_tweet_text(df, user_index)
-
+    #print(users_tweet_text)
     topic = "La reforma pensional en Colombia"
     topic_context = (
         "El gobierno del presidente Gustavo Petro presentó un proyecto de ley para reformar el sistema pensional, "
