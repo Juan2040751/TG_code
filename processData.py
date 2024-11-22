@@ -3,16 +3,17 @@ import re
 import time
 from ast import literal_eval
 from functools import cache
-from typing import List, Dict, Set
+from typing import List, Dict
 
 import emoji
-import openai
+import numpy as np
 import pandas as pd
 from dotenv import dotenv_values
 from numpy import ndarray
 from openai import OpenAI
-from pydantic import BaseModel
 from openai import OpenAIError, APIConnectionError
+from pydantic import BaseModel
+
 
 def preprocess_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -130,8 +131,10 @@ def get_polarity(text: str, sentiment_analyzer) -> float:
     polarity = round(POS - NEG, 3)
     return polarity
 
-def create_link_processor(index_user: Dict[float| int, str]):
-    def get_links_matrix(adjacency_matrix: ndarray, mentions_matrix_date: ndarray[ndarray[List[str]]] = None) -> List[Dict[str, float]]:
+
+def create_link_processor(index_user: Dict[float | int, str]):
+    def get_links_matrix(adjacency_matrix: ndarray, mentions_matrix_date: ndarray[ndarray[List[str]]] = None) -> List[
+        Dict[str, float]]:
         """
         Convierte una matriz de adyacencia en una lista de enlaces (aristas) con los nodos fuente y destino,
         incluyendo el valor de influencia.
@@ -154,7 +157,7 @@ def create_link_processor(index_user: Dict[float| int, str]):
             source_id = index_user[influencer_id]  # Obtener el identificador del nodo fuente
 
             for influenced_user_id, interpersonal_influence in enumerate(user_influences):
-                if interpersonal_influence > 0:  # Solo considerar influencias no nulas
+                if interpersonal_influence != 0:  # Solo considerar influencias no nulas
                     target_id = index_user[influenced_user_id]  # Obtener el identificador del nodo destino
                     link = {
                         "source": source_id,
@@ -166,7 +169,9 @@ def create_link_processor(index_user: Dict[float| int, str]):
                     links.append(link)
 
         return links
+
     return get_links_matrix
+
 
 openIAKey = dotenv_values(".env")["OPENAI_API_KEY"]
 client = OpenAI(api_key=openIAKey)
@@ -176,11 +181,10 @@ class Stance(BaseModel):
     value: float
 
 
-
-
-
 def calculate_stance(users_tweet_text: list[List[str]], users: List[str], prompt: str) -> Dict[str, float]:
     def stanceDetection(opinions: List[str]) -> float:
+        if len(opinions) == 0:
+            return None
         max_retries = 3
         delay = 2  # segundos entre reintentos
 
@@ -220,7 +224,7 @@ def calculate_stance(users_tweet_text: list[List[str]], users: List[str], prompt
             user, stance = row
             cached_stances[user] = float(stance)
 
-    print(cached_stances.__len__())
+    # print(cached_stances.__len__())
     stances = {}
 
     for index, user in enumerate(users):
@@ -232,5 +236,16 @@ def calculate_stance(users_tweet_text: list[List[str]], users: List[str], prompt
             stance = stanceDetection(users_tweet_text[index])
             stances[user] = stance
             save_stance_to_cache(user, stance)
-            print(stances.__len__())
+            # print(stances.__len__())
     return stances
+
+
+def normalization_min_max(matrix: ndarray) -> ndarray:
+    matrix_transformed = np.log1p(matrix)
+
+    # Normalización Min-Max después de la transformación
+    min_value = matrix_transformed.min()
+    max_value = matrix_transformed.max()
+    if max_value > min_value:  # Evitar división por cero
+        matrix_transformed = (matrix_transformed - min_value) / (max_value - min_value)
+    return matrix_transformed

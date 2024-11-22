@@ -1,3 +1,5 @@
+*.csv
+*.gexf
 venv
 ReformaPensional.csv
 .env
