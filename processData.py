@@ -1,18 +1,18 @@
+import concurrent.futures
 import csv
 import re
 import time
 from ast import literal_eval
 from functools import cache
-from typing import List, Dict
+from typing import Dict, List, Set, Union
 
 import emoji
 import numpy as np
 import pandas as pd
 from dotenv import dotenv_values
 from numpy import ndarray
-from openai import OpenAI
-from openai import OpenAIError, APIConnectionError
-from pydantic import BaseModel
+from openai import OpenAI, OpenAIError, APIConnectionError
+from pydantic import BaseModel, Field, model_validator
 
 
 def preprocess_dataframe(df: pd.DataFrame) -> pd.DataFrame:
@@ -58,47 +58,51 @@ def clean_text(text: str) -> str:
 def build_users_tweet_text(
         df: pd.DataFrame,
         user_index: Dict[str, int]
-) -> List[List[str]]:
+) -> ndarray:
     """
-    Construye una lista de sets de opiniones de cada usuario preprocesadas.
+    Construye una lista de sets de opiniones o interacciones para cada usuario preprocesadas.
 
     Parámetros:
         df (pd.DataFrame): DataFrame que contiene los datos de los tweets.
         user_index (Dict[str, int]): Diccionario que asigna un índice único a cada usuario.
 
     Devuelve:
-        List[Set[str]]: Lista de sets de opiniones preprocesadas de cada usuario.
+        ndarray: Matriz de listas de opiniones o interacciones preprocesadas de cada usuario.
     """
     n = len(user_index)
     users_tweet_text = [set() for _ in range(n)]
 
-    for _, row in df.iterrows():
-        author = row['author_username']
-        author_idx = user_index[author]
+    for row in df.itertuples(index=False):
+        author_idx = user_index[row.author_username]
+        ref_author = row.ref_author if row.ref_author else None
+        ref_text = row.ref_note_tweet if row.ref_note_tweet else row.ref_text
 
-        if row['ref_type'] == "tweeted":
-            users_tweet_text[author_idx].add(clean_text(row['text']))
-            continue
+        if row.ref_type == "tweeted":
+            # Opinión propia del autor
+            users_tweet_text[author_idx].add(clean_text(row.text))
+        elif row.ref_type == "retweeted" and ref_text:
+            # Opinión propia al retweetear
+            clean_ref_text = clean_text(ref_text)
+            users_tweet_text[author_idx].add(clean_ref_text)
 
-        ref_author = row['ref_author']
-        ref_author_idx = user_index[ref_author] if ref_author else None
+            # Si hay un autor referenciado, también se asocia el texto al autor original
+            if ref_author and ref_author in user_index:
+                ref_author_idx = user_index[ref_author]
+                users_tweet_text[ref_author_idx].add(clean_ref_text)
+        elif row.ref_type in ["quoted", "replied_to"] and ref_text:
+            # Construir el texto como interacción
+            interaction_text = f'{clean_text(row.text)}\n[{row.ref_type} @{ref_author}: "{clean_text(ref_text)}"]'
 
-        if row['ref_type'] == "retweeted":
-            tweet_text = row['ref_note_tweet'] if row['ref_note_tweet'] else row['ref_text']
-            users_tweet_text[author_idx].add(clean_text(tweet_text))
-            if ref_author_idx is not None:
-                users_tweet_text[ref_author_idx].add(clean_text(tweet_text))
-            continue
+            # Se registra como interacción para el autor del tweet
+            users_tweet_text[author_idx].add(interaction_text)
 
-        if row['ref_type'] in ["quoted", "replied_to"]:
-            users_tweet_text[author_idx].add(clean_text(row['text']))
-            ref_tweet_text = row['ref_note_tweet'] if row['ref_note_tweet'] else row['ref_text']
-            if ref_author_idx is not None:
-                users_tweet_text[ref_author_idx].add(clean_text(ref_tweet_text))
-            users_tweet_text[author_idx].add(clean_text(row['text']))
-            continue
+            # Si hay un autor referenciado, también se asocia la interacción al autor original
+            if ref_author and ref_author in user_index:
+                ref_author_idx = user_index[ref_author]
+                users_tweet_text[ref_author_idx].add(clean_text(ref_text))
 
-    return list(map(lambda user_texts: list(user_texts), users_tweet_text))
+    # Convertir conjuntos en listas para mantener consistencia
+    return np.array([user_texts for user_texts in users_tweet_text])
 
 
 @cache
@@ -173,71 +177,8 @@ def create_link_processor(index_user: Dict[float | int, str]):
     return get_links_matrix
 
 
-openIAKey = dotenv_values(".env")["OPENAI_API_KEY"]
-client = OpenAI(api_key=openIAKey)
 
 
-class Stance(BaseModel):
-    value: float
-
-
-def calculate_stance(users_tweet_text: list[List[str]], users: List[str], prompt: str) -> Dict[str, float]:
-    def stanceDetection(opinions: List[str]) -> float:
-        if len(opinions) == 0:
-            return None
-        max_retries = 3
-        delay = 2  # segundos entre reintentos
-
-        for attempt in range(max_retries):
-            try:
-                completion = client.beta.chat.completions.parse(
-                    model="gpt-4o-mini",
-                    messages=[
-                        {"role": "system", "content": prompt},
-                        {
-                            "role": "user",
-                            "content": str(opinions)
-                        }
-                    ],
-                    response_format=Stance,
-                )
-                return literal_eval(completion.choices[0].message.content)["value"]
-            except APIConnectionError as e:
-                print(f"Connection error on attempt {attempt + 1}/{max_retries}: {e}")
-                time.sleep(delay)
-            except OpenAIError as e:
-                print(f"OpenAI API error: {e}")
-                break
-        return 0.0
-
-    def save_stance_to_cache(user: str, stance: float):
-        """Guarda la postura de un usuario en el archivo CSV."""
-        with open(CACHE_FILE, mode="a", newline="") as file:
-            writer = csv.writer(file)
-            writer.writerow([user, stance])
-
-    CACHE_FILE = "user_stances.csv"
-    cached_stances = {}
-    with open(CACHE_FILE, mode="r", newline="") as file:
-        reader = csv.reader(file)
-        for row in reader:
-            user, stance = row
-            cached_stances[user] = float(stance)
-
-    # print(cached_stances.__len__())
-    stances = {}
-
-    for index, user in enumerate(users):
-        if user in cached_stances:
-            # Usar la postura en caché si existe
-            stances[user] = cached_stances[user]
-        else:
-            # Obtener la postura y guardarla en caché
-            stance = stanceDetection(users_tweet_text[index])
-            stances[user] = stance
-            save_stance_to_cache(user, stance)
-            # print(stances.__len__())
-    return stances
 
 
 def normalization_min_max(matrix: ndarray) -> ndarray:

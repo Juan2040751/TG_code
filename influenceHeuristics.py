@@ -111,7 +111,7 @@ def build_global_influence_matrix(
     """
     # Crear matriz de menciones utilizando la función build_mentions_matrix
     n: int = len(user_index)
-    global_influence: ndarray[int] = np.ones(n, dtype=int)
+    global_influence: ndarray[int] = np.zeros(n, dtype=int)
 
     metrics_keys = ['retweet_count', 'reply_count', 'like_count', 'quote_count', 'bookmarks_count', 'impressions_count']
     for _, row in df.iterrows():
@@ -158,7 +158,7 @@ def build_local_influence_matrix(
     """
 
     n = len(user_index)
-    local_influence: ndarray[float] = np.ones(n, dtype=float)
+    local_influence: ndarray[float] = np.zeros(n, dtype=float)
 
     # Calcular la influencia local de cada usuario en su comunidad
     for i in range(n):
@@ -212,19 +212,14 @@ def build_affinities_matrix(
         return embeddings
 
     for i in range(n):
-        if len(users_tweet_text[i]) == 0:
-            #users_affinity[i] = mentions_matrix_nonNorm[i] * 0.1
+        if len(users_tweet_text[i]) == 0 or users_stances[index_user[i]] is None:
             continue
 
         embeddings_user_i = calculate_embeddings(i)
-        print(f"{i=}, {time.time()}")
         for j in range(n):
-            if i == j:
+            if i == j or users_stances[index_user[j]] is None:
                 continue
             mentions_ij = mentions_matrix_nonNorm[i, j]
-            if len(users_tweet_text[j]) == 0:
-                #users_affinity[i,j] = mentions_ij * 0.1
-                continue
 
             if abs(users_stances[index_user[i]] - users_stances[index_user[j]]) < 0.2:
                 embeddings_user_j = calculate_embeddings(j)
@@ -246,7 +241,7 @@ def build_affinities_matrix(
 
 
 def build_agreement_clique_matrix(
-        users_tweet_text: List[set[str]],
+        users_tweet_text: ndarray[set[str]],
         users_stances: Dict[str, float],
         index_user: Dict[str, int],
         agreement_threshold=0.15,
@@ -301,10 +296,13 @@ def build_agreement_matrix(
     users_agreement: ndarray[ndarray[float]] = np.zeros((n, n), float)
 
     for i in range(n - 1):
+        if users_stances[index_user[i]] is None:
+            continue
         for j in range(i + 1, n):
-            if mentions_matrix[i, j] == 0:
+            if mentions_matrix[i, j] == 0  or users_stances[index_user[j]] is None:
                 continue
-            users_ij_agreement = abs(
-                users_stances[index_user[i]] - users_stances[index_user[j]]) < agreement_threshold
-            users_agreement[i, j] = 1 if users_ij_agreement else -1
+            #users_ij_agreement = abs(
+            #    users_stances[index_user[i]] - users_stances[index_user[j]]) < agreement_threshold
+            #users_agreement[i, j] = 1 if users_ij_agreement else -1
+            users_agreement[i, j] = abs(users_stances[index_user[i]] - users_stances[index_user[j]])
     return users_agreement
