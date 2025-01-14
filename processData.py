@@ -86,7 +86,7 @@ def build_users_tweet_text(
             users_tweet_text[author_idx].add(clean_ref_text)
 
             # Si hay un autor referenciado, también se asocia el texto al autor original
-            if ref_author and ref_author in user_index:
+            if ref_author:
                 ref_author_idx = user_index[ref_author]
                 users_tweet_text[ref_author_idx].add(clean_ref_text)
         elif row.ref_type in ["quoted", "replied_to"] and ref_text:

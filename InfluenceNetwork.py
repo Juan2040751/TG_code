@@ -74,6 +74,7 @@ def process_csv(message):
     user_index: Dict[str, int] = {user: idx for idx, user in enumerate(users)}
     index_user: Dict[int, str] = {index: user for user, index in user_index.items()}
     users_tweet_text = build_users_tweet_text(df, user_index)
+    print(users_tweet_text[user_index["petrogustavo"]], len(str(users_tweet_text[user_index["petrogustavo"]])))
     #print(users_tweet_text)
     topic = "La reforma pensional en Colombia"
     topic_context = (

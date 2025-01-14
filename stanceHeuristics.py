@@ -103,7 +103,7 @@ def calculate_stance(
 
 def stanceDetectionBatch(user_opinions: Dict[str, List[str]], prompt: str) -> Dict[str, float | None]:
     if not user_opinions:
-        return {user: None for user in user_opinions}
+        return {}
 
     max_retries = 10  # Máximo número de intentos
     initial_delay = 0.5  # Tiempo inicial de espera en segundos
@@ -111,13 +111,13 @@ def stanceDetectionBatch(user_opinions: Dict[str, List[str]], prompt: str) -> Di
     for attempt in range(max_retries):
         try:
             completion = client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4o",
                 messages=[
                     {"role": "system", "content": prompt},
                     {"role": "user", "content": str(user_opinions)}
                 ],
 
-                response_format={ "type":"json_object" }
+                response_format={"type": "json_object"}
             )
             # La salida esperada es un JSON con el formato {usuario: postura}
             response: str = completion.choices[0].message.content
@@ -127,7 +127,10 @@ def stanceDetectionBatch(user_opinions: Dict[str, List[str]], prompt: str) -> Di
             response = response.replace("\n", "")
             response = response.replace("  ", "")
             response: Dict[str, float | None] = json.loads(response)
+            if all([response.get(user, None) is None for user in user_opinions]):
+                raise AssertionError(response)
             response = {user: response.get(user, None) for user in user_opinions}
+
             # print("X:", response)
             time.sleep(initial_delay)
             return response
@@ -163,27 +166,37 @@ def calculate_stance(
         users_tweet_text: ndarray[Set[str]],
         users: List[str],
         prompt: str,
-        batch_size: int = 4,
+        batch_size: int = 3,
         testing: bool = True
 ) -> Dict[str, float | None]:
-
     a = time.time()
     output_file: str = "testing_result.json"
 
     if testing and os.path.exists(output_file):
-            with open(output_file, "r") as f:
-                return json.load(f)
+        with open(output_file, "r") as f:
+            # opinions = users_tweet_text[users.index("petrogustavo")]
+            # print(opinions)
+            # print(stanceDetectionBatch({"petrogustavo": opinions}, prompt))
+            return json.load(f)
 
     def process_batch(start_index: int, end_index: int) -> Dict[str, float | None]:
         batch_users = filtered_users[start_index:end_index]
-        batch_opinions = {
-            user: list(filtered_tweet_text[i]) for i, user in enumerate(batch_users, start=start_index)
+        temp_batch_opinions = {
+            user: str(filtered_tweet_text[i]) for i, user in enumerate(batch_users, start=start_index)
         }
+        batch_opinions: Dict[str, str] = {}
+        answer: Dict[str, float | None] = {}
+        for user, opinions in temp_batch_opinions.items():
+            if len(opinions) > 3000:
+                answer.update(stanceDetectionBatch({user: opinions}, prompt))
+            else:
+                batch_opinions[user] = opinions
+        answer.update(stanceDetectionBatch(batch_opinions, prompt))
         b = time.time()
-        res = stanceDetectionBatch(batch_opinions, prompt)
         print(
-            f"processed users {start_index}-{end_index} de {len(filtered_users)}, {b - a} seconds, {res} by {threading.current_thread().name}")
-        return res
+            f"processed users {start_index}-{end_index} de {len(filtered_users)}, {b - a:.2f} seconds, {answer} by {threading.current_thread().name}")
+
+        return answer
 
     stances = {}
 
@@ -191,7 +204,7 @@ def calculate_stance(
     filtered_users = []
     filtered_tweet_text = []
     for user, tweet_set in zip(users, users_tweet_text):
-        if len(tweet_set)!=0:  # Si el conjunto de opiniones no está vacío
+        if len(tweet_set) != 0:  # Si el conjunto de opiniones no está vacío
             filtered_users.append(user)
             filtered_tweet_text.append(tweet_set)
         else:
