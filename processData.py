@@ -1,57 +1,74 @@
-import concurrent.futures
-import csv
 import re
-import time
-from ast import literal_eval
 from functools import cache
-from typing import Dict, List, Set, Union
+from typing import Dict, List, Optional
 
 import emoji
 import numpy as np
 import pandas as pd
-from dotenv import dotenv_values
 from numpy import ndarray
-from openai import OpenAI, OpenAIError, APIConnectionError
-from pydantic import BaseModel, Field, model_validator
 
 
 def preprocess_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Preprocesa el DataFrame para rellenar valores nulos en columnas específicas con valores predeterminados.
+    Preprocesses a DataFrame by filling missing values in specific columns with default values.
 
-    Parámetros:
-        df (pd.DataFrame): DataFrame que contiene los datos a procesar.
+    Columns processed:
+        - 'geo': Fills missing values with "{}".
+        - 'entities': Fills missing values with "{}".
+        - 'in_reply_to_user_id': Fills missing values with 0.
+        - 'ref_id': Fills missing values with 0.
+        - 'ref_type': Fills missing values with "tweeted".
+        - 'ref_author_id': Fills missing values with 0.
+        - 'ref_author': Fills missing values with an empty string "".
+        - 'ref_text': Fills missing values with an empty string "".
+        - 'ref_note_tweet': Fills missing values with an empty string "".
 
-    Devuelve:
-        pd.DataFrame: DataFrame procesado con valores nulos reemplazados.
+    Parameters:
+        df (pd.DataFrame): Input DataFrame containing the data to process.
+
+    Returns:
+        pd.DataFrame: Processed DataFrame with missing values replaced.
+
+    Raises:
+        ValueError: If one or more expected columns are missing from the DataFrame.
     """
-    # Rellenar valores nulos en columnas con valores predeterminados
-    df['geo'] = df['geo'].fillna("{}")
-    df['entities'] = df['entities'].fillna("{}")
-    df['in_reply_to_user_id'] = df['in_reply_to_user_id'].fillna(0)
-    df['ref_id'] = df['ref_id'].fillna(0)
-    df['ref_type'] = df['ref_type'].fillna("tweeted")
-    df['ref_author_id'] = df['ref_author_id'].fillna(0)
-    df['ref_author'] = df['ref_author'].fillna("")
-    df['ref_text'] = df['ref_text'].fillna("")
-    df['ref_note_tweet'] = df['ref_note_tweet'].fillna("")
 
+    default_values = {
+        "text": "",
+        "created_at": None,
+        "public_metrics": "{}",
+        'entities': "{}",
+        'author_username': "",
+        'ref_type': "tweeted",
+        'ref_author': "",
+        'ref_text': "",
+        'ref_note_tweet': ""
+    }
+    missing_columns = [col for col in default_values if col not in df.columns]
+    if missing_columns:
+        raise ValueError(
+            f"El Dataset no contiene las siguientes columnas necesarias: {', '.join(missing_columns)}"
+        )
+    df = df[["text", "created_at", "public_metrics", "entities", "author_username", "ref_type",
+            "ref_author", "ref_text", "ref_note_tweet"]]
+    for col, default in default_values.items():
+        df[col] = df[col].fillna(default)
     return df
 
 
 def clean_text(text: str) -> str:
     """
-    Realiza el preprocesamiento de un texto, reemplazando URL y emojis, y eliminando espacios extras.
+    Preprocesses a text by replacing URLs and emojis, and removing extra spaces.
 
-    Parámetros:
-        text (str): Texto original a preprocesar.
+    Parameters:
+        text (str): Original text to preprocess.
 
-    Devuelve:
-        str: Texto preprocesado.
+    Returns:
+        str: Preprocessed text.
     """
-    text = re.sub(r'http\S+|www\S+', ':url:', text)  # Reemplaza URL
-    text = emoji.demojize(text, language="es")  # Reemplaza emojis por su descripción en texto
-    text = re.sub(' +', ' ', text)  # Elimina espacios extras
+    text = re.sub(r'http\S+|www\S+', ':url:', text)  # Replace URLs with ':url:'
+    text = emoji.demojize(text, language="es")  # Replace emojis with text descriptions
+    text = re.sub(r'\s+', ' ', text).strip()  # Remove extra spaces and trim
     return text
 
 
@@ -60,14 +77,14 @@ def build_users_tweet_text(
         user_index: Dict[str, int]
 ) -> ndarray:
     """
-    Construye una lista de sets de opiniones o interacciones para cada usuario preprocesadas.
+    Builds a list of sets containing preprocessed opinions or interactions for each user.
 
-    Parámetros:
-        df (pd.DataFrame): DataFrame que contiene los datos de los tweets.
-        user_index (Dict[str, int]): Diccionario que asigna un índice único a cada usuario.
+    Parameters:
+        df (pd.DataFrame): DataFrame containing tweet data.
+        user_index (Dict[str, int]): Dictionary mapping each username to a unique index.
 
-    Devuelve:
-        ndarray: Matriz de listas de opiniones o interacciones preprocesadas de cada usuario.
+    Returns:
+        ndarray: Array of sets with preprocessed opinions or interactions for each user.
     """
     n = len(user_index)
     users_tweet_text = [set() for _ in range(n)]
@@ -78,46 +95,39 @@ def build_users_tweet_text(
         ref_text = row.ref_note_tweet if row.ref_note_tweet else row.ref_text
 
         if row.ref_type == "tweeted":
-            # Opinión propia del autor
             users_tweet_text[author_idx].add(clean_text(row.text))
         elif row.ref_type == "retweeted" and ref_text:
-            # Opinión propia al retweetear
             clean_ref_text = clean_text(ref_text)
             users_tweet_text[author_idx].add(clean_ref_text)
 
-            # Si hay un autor referenciado, también se asocia el texto al autor original
             if ref_author:
                 ref_author_idx = user_index[ref_author]
                 users_tweet_text[ref_author_idx].add(clean_ref_text)
         elif row.ref_type in ["quoted", "replied_to"] and ref_text:
-            # Construir el texto como interacción
-            interaction_text = f'{clean_text(row.text)}\n[{row.ref_type} @{ref_author}: "{clean_text(ref_text)}"]'
-
-            # Se registra como interacción para el autor del tweet
+            interaction_text = f'{clean_text(row.text)}\n[{row.ref_type} @{ref_author}: "{clean_text(ref_text)[:200]}"]'
             users_tweet_text[author_idx].add(interaction_text)
 
-            # Si hay un autor referenciado, también se asocia la interacción al autor original
             if ref_author and ref_author in user_index:
                 ref_author_idx = user_index[ref_author]
                 users_tweet_text[ref_author_idx].add(clean_text(ref_text))
 
-    # Convertir conjuntos en listas para mantener consistencia
-    return np.array([user_texts for user_texts in users_tweet_text])
+    return np.array(users_tweet_text, dtype=object)
 
 
 @cache
 def get_embeddings(text: str, similarity_model):
     """
-    Calcula y guarda en caché los embeddings de una opinión dada.
+    Computes and caches the embeddings for a given opinion, removing additional information
+    after a newline and within square brackets.
 
-    Parámetros:
-        text (str): Opinión a calcular embeddings.
+    Parameters:
+        text (str): The opinion text to compute embeddings for.
 
-    Devuelve:
-        Embeddings de la opinión.
+    Returns:
+        Embeddings of the cleaned opinion.
     """
-    return similarity_model.encode(text)
-
+    cleaned_text = re.sub(r'\n\[.*?\]', '', text).strip()
+    return similarity_model.encode(cleaned_text)
 
 @cache
 def get_polarity(text: str, sentiment_analyzer) -> float:
@@ -136,37 +146,50 @@ def get_polarity(text: str, sentiment_analyzer) -> float:
     return polarity
 
 
-def create_link_processor(index_user: Dict[float | int, str]):
-    def get_links_matrix(adjacency_matrix: ndarray, mentions_matrix_date: ndarray[ndarray[List[str]]] = None) -> List[
-        Dict[str, float]]:
-        """
-        Convierte una matriz de adyacencia en una lista de enlaces (aristas) con los nodos fuente y destino,
-        incluyendo el valor de influencia.
+def create_link_processor(index_user: Dict[int, str]):
+    """
+    Creates a processor function to convert an adjacency matrix into a list of links for a network.
 
-        Args:
-            adjacency_matrix (np.ndarray): Matriz de adyacencia que representa las relaciones de influencia entre usuarios.
-                                            Cada celda contiene el valor de la influencia de un nodo fuente a un nodo destino.
-            index_user (Dict[int, str]): Diccionario que mapea el índice de un nodo (entero) a su identificador (cadena).
+    Parameters:
+        index_user (Dict[int, str]): Dictionary mapping node indices to their unique identifiers.
+
+    Returns:
+        Callable[[ndarray, Optional[ndarray]], List[Dict[str, Any]]]: A function that processes an adjacency matrix
+        and an optional mentions date matrix into a list of links.
+    """
+    def get_links_matrix(
+        adjacency_matrix: ndarray,
+        mentions_matrix_date: Optional[ndarray] = None
+    ) -> List[Dict[str, float]]:
+        """
+        Converts an adjacency matrix into a list of links (edges) with source, target, and influence values.
+
+        Parameters:
+            adjacency_matrix (ndarray): A 2D array representing influence relationships.
+                                        Each cell contains the influence value from a source node to a target node.
+            mentions_matrix_date (Optional[ndarray]): A 2D array containing dates for mentions between nodes.
+                                                      Defaults to None.
 
         Returns:
-            List[Dict[str, float]]: Lista de diccionarios que representa los enlaces de la red.
-                                    Cada diccionario contiene:
-                                        - "source_id" (str): Identificador del nodo fuente.
-                                        - "target_id" (str): Identificador del nodo destino.
-                                        - "influence_value" (float): Valor de la influencia del nodo fuente sobre el nodo destino.
+            List[Dict[str, Any]]: A list of dictionaries representing the network's links.
+                                  Each dictionary includes:
+                                    - "source" (str): Source node identifier.
+                                    - "target" (str): Target node identifier.
+                                    - "influenceValue" (float): Influence value from source to target.
+                                    - "date" (str): Date of mention (if mentions_matrix_date is provided).
         """
         links = []
 
         for influencer_id, user_influences in enumerate(adjacency_matrix):
-            source_id = index_user[influencer_id]  # Obtener el identificador del nodo fuente
+            source_name = index_user[influencer_id]
 
             for influenced_user_id, interpersonal_influence in enumerate(user_influences):
-                if interpersonal_influence != 0:  # Solo considerar influencias no nulas
-                    target_id = index_user[influenced_user_id]  # Obtener el identificador del nodo destino
+                if interpersonal_influence != 0:  # Process only non-zero influences
+                    target_name = index_user[influenced_user_id]
                     link = {
-                        "source": source_id,
-                        "target": target_id,
-                        "influenceValue": round(float(interpersonal_influence), 3)  # Convertir el valor a float
+                        "source": source_name,
+                        "target": target_name,
+                        "influenceValue": round(float(interpersonal_influence), 3)
                     }
                     if mentions_matrix_date is not None:
                         link["date"] = mentions_matrix_date[influencer_id, influenced_user_id]
@@ -178,15 +201,23 @@ def create_link_processor(index_user: Dict[float | int, str]):
 
 
 
-
-
-
 def normalization_min_max(matrix: ndarray) -> ndarray:
+    """
+    Applies log transformation followed by Min-Max normalization to a matrix.
+
+    Parameters:
+        matrix (ndarray): A numerical 2D array to be normalized.
+
+    Returns:
+        ndarray: A transformed and normalized matrix, where values are scaled to the range [0, 1].
+    """
     matrix_transformed = np.log1p(matrix)
 
-    # Normalización Min-Max después de la transformación
+    # Min-Max normalization
     min_value = matrix_transformed.min()
     max_value = matrix_transformed.max()
-    if max_value > min_value:  # Evitar división por cero
+    if max_value > min_value:
         matrix_transformed = (matrix_transformed - min_value) / (max_value - min_value)
+    matrix_transformed = np.round(matrix_transformed)
     return matrix_transformed
+
