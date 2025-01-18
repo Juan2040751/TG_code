@@ -9,6 +9,7 @@
       <change beforePath="$PROJECT_DIR$/InfluenceNetwork.py" beforeDir="false" afterPath="$PROJECT_DIR$/InfluenceNetwork.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/influenceHeuristics.py" beforeDir="false" afterPath="$PROJECT_DIR$/influenceHeuristics.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/processData.py" beforeDir="false" afterPath="$PROJECT_DIR$/processData.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/similarity.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/similarity.ipynb" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -103,8 +104,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-e768b9ed790e-JavaScript-PY-243.21565.199" />
-        <option value="bundled-python-sdk-cab1f2013843-4ae2d6a61b08-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-243.21565.199" />
+        <option value="bundled-js-predefined-d6986cc7102b-deb605915726-JavaScript-PY-243.22562.220" />
+        <option value="bundled-python-sdk-0fc6c617c4bd-9a18a617cbe4-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-243.22562.220" />
       </set>
     </attachedChunks>
   </component>
@@ -216,7 +217,12 @@
       <workItem from="1733416977245" duration="24000" />
       <workItem from="1734092447269" duration="1418000" />
       <workItem from="1736885359658" duration="18914000" />
-      <workItem from="1737039596681" duration="9971000" />
+      <workItem from="1737039596681" duration="14912000" />
+      <workItem from="1737062335985" duration="1062000" />
+      <workItem from="1737063657624" duration="6168000" />
+      <workItem from="1737149198222" duration="5936000" />
+      <workItem from="1737214485889" duration="3819000" />
+      <workItem from="1737218549616" duration="12605000" />
     </task>
     <servers />
   </component>

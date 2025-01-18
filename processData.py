@@ -35,7 +35,7 @@ def preprocess_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
     default_values = {
         "text": "",
-        "created_at": None,
+        "created_at": 0,
         "public_metrics": "{}",
         'entities': "{}",
         'author_username': "",
@@ -127,7 +127,7 @@ def get_embeddings(text: str, similarity_model):
         Embeddings of the cleaned opinion.
     """
     cleaned_text = re.sub(r'\n\[.*?\]', '', text).strip()
-    return similarity_model.encode(cleaned_text)
+    return similarity_model.encode(cleaned_text, clean_up_tokenization_spaces=True, normalize_embeddings=True)
 
 @cache
 def get_polarity(text: str, sentiment_analyzer) -> float:
@@ -218,6 +218,6 @@ def normalization_min_max(matrix: ndarray) -> ndarray:
     max_value = matrix_transformed.max()
     if max_value > min_value:
         matrix_transformed = (matrix_transformed - min_value) / (max_value - min_value)
-    matrix_transformed = np.round(matrix_transformed)
+    matrix_transformed = np.round(matrix_transformed,3)
     return matrix_transformed
 

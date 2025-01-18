@@ -24,6 +24,7 @@ def build_influence_networks(df: pd.DataFrame, users_tweet_text, user_index, ind
     str, dict]:
     get_links_matrix = create_link_processor(index_user)
     mentions_matrix, mentions_matrix_date, mentions_matrix_nonNorm = build_mentions_matrix(df, user_index)
+
     emit("influence_heuristic", {"mentions_links": get_links_matrix(mentions_matrix, mentions_matrix_date)},
          broadcast=False)
 
@@ -32,7 +33,7 @@ def build_influence_networks(df: pd.DataFrame, users_tweet_text, user_index, ind
          {"global_influence_links": get_links_matrix(global_influence_matrix, mentions_matrix_date)},
          broadcast=False)
 
-    local_influence_matrix = build_local_influence_matrix(df, user_index, global_influence, mentions_matrix_nonNorm)
+    local_influence_matrix = build_local_influence_matrix(user_index, global_influence, mentions_matrix_nonNorm)
     emit("influence_heuristic",
          {"local_influence_links": get_links_matrix(local_influence_matrix, mentions_matrix_date)},
          broadcast=False)
@@ -109,14 +110,15 @@ def process_csv(message):
         )
 
         # Build influence networks without stance
-        build_influence_networks_with_stances = build_influence_networks(df, users_tweet_text, user_index, index_user, users, prompt)
+        build_influence_networks_with_stances = build_influence_networks(df, users_tweet_text, user_index, index_user)
 
         stances = calculate_stance(users_tweet_text, users, prompt)
         emit("stance_heuristic", stances, broadcast=False)
 
         build_influence_networks_with_stances(stances)
 
-    except (ValueError, KeyError) as e:
+    except ValueError as e:
+        print(e)
         emit("preprocess_error", f"Error processing CSV: {str(e)}", broadcast=False)
 
 

@@ -1,7 +1,8 @@
-import time
 from ast import literal_eval
+from multiprocessing import Pool
+from time import sleep
 from typing import List, Dict, Set, Tuple
-import json
+
 import numpy as np
 import pandas as pd
 from numpy import ndarray
@@ -26,6 +27,7 @@ def get_mentions_list(tweet_entities: str) -> List[str]:
         return [mention['username'] for mention in literal_eval(tweet_entities).get("mentions", [])]
     except:
         raise ValueError(f"Invalid tweet_entities format")
+
 
 def identify_nodes(df: pd.DataFrame) -> List[str]:
     """
@@ -57,9 +59,10 @@ def identify_nodes(df: pd.DataFrame) -> List[str]:
 
     return list(users)
 
+
 def build_mentions_matrix(
-    df: pd.DataFrame,
-    user_index: Dict[str, int]
+        df: pd.DataFrame,
+        user_index: Dict[str, int]
 ) -> Tuple[ndarray, ndarray, ndarray]:
     """
     Builds a mentions matrix quantifying interactions between users, along with a matrix of dates.
@@ -81,7 +84,7 @@ def build_mentions_matrix(
     n = len(user_index)
     mentions_matrix = np.zeros((n, n), dtype=int)
     mentions_matrix_date = np.empty((n, n), dtype=object)
-
+    i = 0
     for row in df.itertuples(index=False):
         author = row.author_username
         author_idx = user_index.get(author)
@@ -92,6 +95,7 @@ def build_mentions_matrix(
 
         for mentioned_user in mentions:
             mentioned_user_idx = user_index.get(mentioned_user)
+
             if mentioned_user_idx is not None and author_idx is not None:
                 mentions_matrix[mentioned_user_idx, author_idx] += 1
                 if mentions_matrix_date[mentioned_user_idx, author_idx] is None:
@@ -106,9 +110,9 @@ def build_mentions_matrix(
 
 
 def build_global_influence_matrix(
-    df: pd.DataFrame,
-    user_index: Dict[str, int],
-    mentions_matrix_nonNorm: ndarray
+        df: pd.DataFrame,
+        user_index: Dict[str, int],
+        mentions_matrix_nonNorm: ndarray
 ) -> Tuple[ndarray, ndarray]:
     """
     Computes the global influence matrix by weighting user interactions and mentions.
@@ -143,10 +147,10 @@ def build_global_influence_matrix(
             )
 
             global_influence[author_idx] += (
-                0.43 * (n_retweets + n_quotes + n_replies) +
-                0.33 * (n_likes + n_bookmarks) +
-                0.23 * n_impressions +
-                0.01
+                    0.43 * (n_retweets + n_quotes + n_replies) +
+                    0.33 * (n_likes + n_bookmarks) +
+                    0.23 * n_impressions +
+                    0.01
             )
 
     global_influence_matrix = mentions_matrix_nonNorm * global_influence[:, np.newaxis]
@@ -155,18 +159,15 @@ def build_global_influence_matrix(
     return global_influence_matrix, global_influence
 
 
-
 def build_local_influence_matrix(
-    df: pd.DataFrame,
-    user_index: Dict[str, int],
-    global_influence: ndarray,
-    mentions_matrix_nonNorm: ndarray
+        user_index: Dict[str, int],
+        global_influence: ndarray,
+        mentions_matrix_nonNorm: ndarray
 ) -> ndarray:
     """
     Computes the local influence matrix based on global influence and community connections.
 
     Parameters:
-        df (pd.DataFrame): DataFrame containing tweet data.
         user_index (Dict[str, int]): Dictionary mapping usernames to unique indices.
         global_influence (ndarray): Array of global influence values for each user.
         mentions_matrix_nonNorm (ndarray): Non-normalized mentions matrix.
@@ -186,63 +187,78 @@ def build_local_influence_matrix(
     return normalization_min_max(local_influence_matrix)
 
 
+def calculate_embeddings(args):
+    user_idx, user_tweet_text = args
+    user_embeddings = np.array(
+        [get_embeddings(opinion, similarity_model) for opinion in user_tweet_text])
+    print(f"Embedding {user_idx=} done")
+    return user_idx, user_embeddings
+
+
+def calculate_user_affinity(args):
+    results_i, results_j, mentions_matrix_nonNorm = args
+    i, embeddings_user_i = results_i
+    j, embeddings_user_j = results_j
+    mentions_ij = mentions_matrix_nonNorm[i, j]
+    mentions_ji = mentions_matrix_nonNorm[j, i]
+    print(f"\nProcessing: {i=}, {j=}", end=" ")
+
+    similarity_opinions_ij = similarity_model.similarity(embeddings_user_i, embeddings_user_j).mean()
+    affinity_value_ij = similarity_opinions_ij * (mentions_ij + 1)
+    affinity_value_ji = similarity_opinions_ij * (mentions_ji + 1)
+    print(f"calculated {i=}, {j=}", end="")
+    sleep(.1)
+    return i, j, affinity_value_ij, affinity_value_ji
+
 
 def build_affinities_matrix(
-        users_tweet_text: List[set[str]],
+        users_tweet_text: List[Set[str]],
         users_stances: Dict[str, float],
-        index_user: Dict[str, int],
-        mentions_matrix_nonNorm: ndarray[ndarray[int]]
-) -> ndarray[ndarray[float]]:
+        index_user: Dict[int, str],
+        mentions_matrix_nonNorm: np.ndarray
+) -> np.ndarray:
     """
-    Calcula la afinidad entre usuarios basándose en similitudes de opiniones y polaridades.
+    Calculates the affinity between users based on similarity of opinions and polarities.
 
-    Parámetros:
-        globalInfluence_df (pd.DataFrame): DataFrame con la influencia global de cada usuario.
-        user_index (Dict[str, int]): Diccionario que asigna un índice único a cada usuario.
-        users_tweet_text (List[set[str]]): Lista de opiniones preprocesadas de cada usuario.
+    Parameters:
+        users_tweet_text (List[set[str]]): Preprocessed opinions for each user.
+        users_stances (Dict[str, float]): Dictionary of user stances on a particular topic.
+        index_user (Dict[str, int]): Mapping of user identifiers to their index.
+        mentions_matrix_nonNorm (np.ndarray): Matrix of user interactions/mentions.
 
-    Devuelve:
-        np.ndarray: Matriz de afinidad entre usuarios.
-        Dict[Tuple[str, str], str]: Diccionario con las relaciones de postura ("A favor" o "En contra") entre pares de usuarios.
+    Returns:
+        np.ndarray: Affinity matrix between users.
     """
-    a = time.time()
+    print("working...")
     n = len(users_tweet_text)
+    users_affinity = np.zeros((n, n), float)
 
-    users_affinity: ndarray[ndarray[float]] = np.zeros((n, n), float)
-    users_embeddings = np.array([None] * n)
-    similarity_cache = dict()
+    user_with_stances = [(i, users_tweet_text[i]) for i, user in enumerate(index_user.values()) if
+                         users_stances[user] is not None]
+    print("working1...")
 
-    def calculate_embeddings(index):
-        if users_embeddings[index] is not None:
-            return users_embeddings[index]
-        opinions = users_tweet_text[index]
-        embeddings = np.array([get_embeddings(opinion, similarity_model) for opinion in opinions])
-        users_embeddings[index] = embeddings
-        return embeddings
+    def validate_affinities(index_i, index_j):
+        return abs(users_stances[index_user[index_i]] - users_stances[index_user[index_j]]) < .1
 
-    for i in range(n-1):
-        if len(users_tweet_text[i]) == 0 or users_stances[index_user[i]] is None:
-            continue
+    with Pool() as pool:
+        results = pool.map(calculate_embeddings, user_with_stances)
+        print("working2...")
+        tasks = [(results[i], results[j],
+                  mentions_matrix_nonNorm)
+                 for i in range(len(results) - 1)
+                 for j in range(i + 1, len(results))
+                 if validate_affinities(results[i][0], results[j][0])]
+        print("working3...", len(tasks))
+        afinity_results = pool.map(calculate_user_affinity, tasks)
+        for i, j, affinity_value_ij, affinity_value_ji in afinity_results:
+            if affinity_value_ij is not None:
+                users_affinity[i, j] = affinity_value_ij
+            if affinity_value_ji is not None:
+                users_affinity[j, i] = affinity_value_ji
 
-        embeddings_user_i = calculate_embeddings(i)
-        for j in range(i+1,n):
-            if users_stances[index_user[j]] is None:
-                continue
-            mentions_ij = mentions_matrix_nonNorm[i, j]
-
-            if abs(users_stances[index_user[i]] - users_stances[index_user[j]]) < 0.2:
-                embeddings_user_j = calculate_embeddings(j)
-
-                similarity_opinions_ij: float = similarity_model.similarity(embeddings_user_i,
-                                                                                embeddings_user_j).mean()
-                similarity_opinions_ij = round(float(similarity_opinions_ij),3)
-
-                users_affinity[i, j] = similarity_opinions_ij * (mentions_ij + 1)
-    #users_affinity[users_affinity < 1] = 0
-    b = time.time()
-    print(b - a)
     users_affinity = normalization_min_max(users_affinity)
     return users_affinity
+
 
 """
 def build_agreement_clique_matrix(
@@ -266,11 +282,12 @@ def build_agreement_clique_matrix(
     return users_agreement
 """
 
+
 def build_agreement_matrix(
-    mentions_matrix: ndarray,
-    users_stances: Dict[str, float],
-    index_user: Dict[int, str],
-    agreement_threshold: float = 0.2
+        mentions_matrix: ndarray,
+        users_stances: Dict[str, float],
+        index_user: Dict[int, str],
+        agreement_threshold: float = 0.2
 ) -> ndarray:
     """
     Computes an agreement matrix based on users' stance similarities and mentions.
@@ -306,4 +323,3 @@ def build_agreement_matrix(
             users_agreement[i, j] = 1 if agreement else -1
 
     return users_agreement
-
