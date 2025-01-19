@@ -8,8 +8,6 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/InfluenceNetwork.py" beforeDir="false" afterPath="$PROJECT_DIR$/InfluenceNetwork.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/influenceHeuristics.py" beforeDir="false" afterPath="$PROJECT_DIR$/influenceHeuristics.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/processData.py" beforeDir="false" afterPath="$PROJECT_DIR$/processData.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/similarity.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/similarity.ipynb" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -222,7 +220,7 @@
       <workItem from="1737063657624" duration="6168000" />
       <workItem from="1737149198222" duration="5936000" />
       <workItem from="1737214485889" duration="3819000" />
-      <workItem from="1737218549616" duration="12605000" />
+      <workItem from="1737218549616" duration="19330000" />
     </task>
     <servers />
   </component>

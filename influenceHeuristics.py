@@ -1,16 +1,11 @@
 from ast import literal_eval
-from multiprocessing import Pool
-from time import sleep
 from typing import List, Dict, Set, Tuple
 
 import numpy as np
 import pandas as pd
 from numpy import ndarray
-from sentence_transformers import SentenceTransformer
 
-from processData import get_embeddings, normalization_min_max
-
-similarity_model = SentenceTransformer('jaimevera1107/all-MiniLM-L6-v2-similarity-es')
+from processData import normalization_min_max
 
 
 def get_mentions_list(tweet_entities: str) -> List[str]:
@@ -84,7 +79,6 @@ def build_mentions_matrix(
     n = len(user_index)
     mentions_matrix = np.zeros((n, n), dtype=int)
     mentions_matrix_date = np.empty((n, n), dtype=object)
-    i = 0
     for row in df.itertuples(index=False):
         author = row.author_username
         author_idx = user_index.get(author)
@@ -187,30 +181,6 @@ def build_local_influence_matrix(
     return normalization_min_max(local_influence_matrix)
 
 
-def calculate_embeddings(args):
-    user_idx, user_tweet_text = args
-    user_embeddings = np.array(
-        [get_embeddings(opinion, similarity_model) for opinion in user_tweet_text])
-    print(f"Embedding {user_idx=} done")
-    return user_idx, user_embeddings
-
-
-def calculate_user_affinity(args):
-    results_i, results_j, mentions_matrix_nonNorm = args
-    i, embeddings_user_i = results_i
-    j, embeddings_user_j = results_j
-    mentions_ij = mentions_matrix_nonNorm[i, j]
-    mentions_ji = mentions_matrix_nonNorm[j, i]
-    print(f"\nProcessing: {i=}, {j=}", end=" ")
-
-    similarity_opinions_ij = similarity_model.similarity(embeddings_user_i, embeddings_user_j).mean()
-    affinity_value_ij = similarity_opinions_ij * (mentions_ij + 1)
-    affinity_value_ji = similarity_opinions_ij * (mentions_ji + 1)
-    print(f"calculated {i=}, {j=}", end="")
-    sleep(.1)
-    return i, j, affinity_value_ij, affinity_value_ji
-
-
 def build_affinities_matrix(
         users_tweet_text: List[Set[str]],
         users_stances: Dict[str, float],
@@ -233,54 +203,31 @@ def build_affinities_matrix(
     n = len(users_tweet_text)
     users_affinity = np.zeros((n, n), float)
 
-    user_with_stances = [(i, users_tweet_text[i]) for i, user in enumerate(index_user.values()) if
-                         users_stances[user] is not None]
-    print("working1...")
+    user_with_stances = {i: users_stances[user] for i, user in enumerate(index_user.values()) if
+                         users_stances[user] is not None}
 
     def validate_affinities(index_i, index_j):
-        return abs(users_stances[index_user[index_i]] - users_stances[index_user[index_j]]) < .1
+        return abs(user_with_stances[index_i] - user_with_stances[index_j]) < .075
 
-    with Pool() as pool:
-        results = pool.map(calculate_embeddings, user_with_stances)
-        print("working2...")
-        tasks = [(results[i], results[j],
-                  mentions_matrix_nonNorm)
-                 for i in range(len(results) - 1)
-                 for j in range(i + 1, len(results))
-                 if validate_affinities(results[i][0], results[j][0])]
-        print("working3...", len(tasks))
-        afinity_results = pool.map(calculate_user_affinity, tasks)
-        for i, j, affinity_value_ij, affinity_value_ji in afinity_results:
-            if affinity_value_ij is not None:
+    for i in range(n - 1):
+        if i not in user_with_stances:
+            continue
+        stance_i = user_with_stances[i]
+        for j in range(i + 1, n):
+            if j not in user_with_stances:
+                continue
+            stance_j = user_with_stances[j]
+            if validate_affinities(i, j):
+                stance_diff = abs(stance_i - stance_j)
+                similarity_opinions_ij = 1 / (stance_diff * 100) if stance_diff != 0 else 1
+                affinity_value_ij = similarity_opinions_ij * (mentions_matrix_nonNorm[i, j] + .1)
+                affinity_value_ji = similarity_opinions_ij * (mentions_matrix_nonNorm[j, i] + .1)
                 users_affinity[i, j] = affinity_value_ij
-            if affinity_value_ji is not None:
                 users_affinity[j, i] = affinity_value_ji
+        print(f"working {i=}, {(i + 1)/(n-1):.2%}", end="\r")
 
     users_affinity = normalization_min_max(users_affinity)
     return users_affinity
-
-
-"""
-def build_agreement_clique_matrix(
-        users_tweet_text: ndarray[set[str]],
-        users_stances: Dict[str, float],
-        index_user: Dict[str, int],
-        agreement_threshold=0.15,
-) -> ndarray[ndarray[float]]:
-    n = len(users_tweet_text)
-    users_agreement: ndarray[ndarray[float]] = np.zeros((n, n), float)
-
-    for i in range(n - 1):
-        if len(users_tweet_text[i]) == 0:
-            continue
-        for j in range(i + 1, n):
-            if len(users_tweet_text[j]) == 0:
-                continue
-            users_ij_agreement = abs(
-                users_stances[index_user[i]] - users_stances[index_user[j]]) < agreement_threshold
-            users_agreement[i, j] = 1 if users_ij_agreement else -1
-    return users_agreement
-"""
 
 
 def build_agreement_matrix(

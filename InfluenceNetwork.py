@@ -17,7 +17,7 @@ from stanceHeuristics import calculate_stance
 
 app = Flask(__name__)
 CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*", max_http_buffer_size=10000000)
+socketio = SocketIO(app, cors_allowed_origins="*", max_http_buffer_size=15000000)
 
 
 def build_influence_networks(df: pd.DataFrame, users_tweet_text, user_index, index_user) -> Dict[
@@ -45,6 +45,7 @@ def build_influence_networks(df: pd.DataFrame, users_tweet_text, user_index, ind
              broadcast=False)
 
         affinities_matrix = build_affinities_matrix(users_tweet_text, stances, index_user, mentions_matrix_nonNorm)
+
         emit("influence_heuristic", {"affinities_links": get_links_matrix(affinities_matrix)},
              broadcast=False)
     return build_influence_networks_with_stances
