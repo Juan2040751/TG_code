@@ -1,13 +1,15 @@
+import time
 from ast import literal_eval
 from typing import List, Dict, Set, Tuple
 
 import numpy as np
 import pandas as pd
 from numpy import ndarray
+from sentence_transformers import SentenceTransformer
 
-from processData import normalization_min_max
+from processData import normalization_min_max, get_embeddings
 
-
+similarity_model = SentenceTransformer('jaimevera1107/all-MiniLM-L6-v2-similarity-es')
 def get_mentions_list(tweet_entities: str) -> List[str]:
     """
     Extracts the list of mentioned usernames from a tweet's entity data.
@@ -200,33 +202,51 @@ def build_affinities_matrix(
         np.ndarray: Affinity matrix between users.
     """
     print("working...")
+    a = time.time()
     n = len(users_tweet_text)
     users_affinity = np.zeros((n, n), float)
 
     user_with_stances = {i: users_stances[user] for i, user in enumerate(index_user.values()) if
                          users_stances[user] is not None}
 
-    def validate_affinities(index_i, index_j):
-        return abs(user_with_stances[index_i] - user_with_stances[index_j]) < .075
+    def calculate_embeddings(index):
+        opinions = users_tweet_text[index]
+        embeddings = np.array([get_embeddings(opinion, similarity_model) for opinion in opinions])
+        return embeddings
 
+    embeddings = {}
     for i in range(n - 1):
         if i not in user_with_stances:
             continue
         stance_i = user_with_stances[i]
+        embeddings_i = calculate_embeddings(i) if i not in embeddings else embeddings.pop(i)
         for j in range(i + 1, n):
             if j not in user_with_stances:
                 continue
             stance_j = user_with_stances[j]
-            if validate_affinities(i, j):
-                stance_diff = abs(stance_i - stance_j)
-                similarity_opinions_ij = 1 / (stance_diff * 100) if stance_diff != 0 else 1
-                affinity_value_ij = similarity_opinions_ij * (mentions_matrix_nonNorm[i, j] + .1)
-                affinity_value_ji = similarity_opinions_ij * (mentions_matrix_nonNorm[j, i] + .1)
-                users_affinity[i, j] = affinity_value_ij
-                users_affinity[j, i] = affinity_value_ji
-        print(f"working {i=}, {(i + 1)/(n-1):.2%}", end="\r")
+            embeddings_j = calculate_embeddings(j) if j not in embeddings else embeddings[j]
+            embeddings[j] = embeddings_j
+            stance_diff = abs(stance_i - stance_j)
+            if stance_diff < 0.2:
+                similarity_opinions: float = similarity_model.similarity(embeddings_i,
+                                                                            embeddings_j).mean()
+
+                affinity_value_ij = similarity_opinions * mentions_matrix_nonNorm[i, j]
+                affinity_value_ji = similarity_opinions * mentions_matrix_nonNorm[j, i]
+                if mentions_matrix_nonNorm[j, i] != 0:
+                    users_affinity[i, j] = affinity_value_ij
+                elif similarity_opinions > .5:
+                    users_affinity[i, j] = similarity_opinions
+                else:
+                    users_affinity[i, j] = 0
+                users_affinity[i, j] = affinity_value_ij if affinity_value_ij != 0 else (similarity_opinions if similarity_opinions > .7 else 0)
+                users_affinity[j, i] = affinity_value_ji if affinity_value_ji != 0 else (similarity_opinions if similarity_opinions > .7 else 0)
+        b = time.time()
+        print(f"affinity work: {i=}, {(i + 1)/(n-1):.1%}, {b-a:.1f}s", end="\r")
 
     users_affinity = normalization_min_max(users_affinity)
+    users_affinity[users_affinity < 0.01] = 0
+    print("\naffinity work: done")
     return users_affinity
 
 

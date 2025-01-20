@@ -184,7 +184,7 @@ def create_link_processor(index_user: Dict[int, str]):
             source_name = index_user[influencer_id]
 
             for influenced_user_id, interpersonal_influence in enumerate(user_influences):
-                if interpersonal_influence != 0:  # Process only non-zero influences
+                if abs(interpersonal_influence) >= 0.01:
                     target_name = index_user[influenced_user_id]
                     link = {
                         "source": source_name,

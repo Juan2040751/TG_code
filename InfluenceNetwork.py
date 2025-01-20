@@ -45,7 +45,8 @@ def build_influence_networks(df: pd.DataFrame, users_tweet_text, user_index, ind
              broadcast=False)
 
         affinities_matrix = build_affinities_matrix(users_tweet_text, stances, index_user, mentions_matrix_nonNorm)
-
+        aff = affinities_matrix[affinities_matrix != 0]
+        print(len(aff))
         emit("influence_heuristic", {"affinities_links": get_links_matrix(affinities_matrix)},
              broadcast=False)
     return build_influence_networks_with_stances
