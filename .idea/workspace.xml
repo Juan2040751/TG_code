@@ -7,8 +7,11 @@
     <list default="true" id="68971e0c-dbaf-4bf6-8ed2-bbefd3510547" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/InfluenceNetwork.py" beforeDir="false" afterPath="$PROJECT_DIR$/InfluenceNetwork.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/influenceHeuristics.py" beforeDir="false" afterPath="$PROJECT_DIR$/influenceHeuristics.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/processData.py" beforeDir="false" afterPath="$PROJECT_DIR$/processData.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/similarity.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/similarity.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/stanceHeuristics.py" beforeDir="false" afterPath="$PROJECT_DIR$/stanceHeuristics.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/user_stances.csv" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -47,6 +50,7 @@
     <setting file="file://$PROJECT_DIR$/venv/Lib/site-packages/sentence_transformers/cross_encoder/CrossEncoder.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/venv/Lib/site-packages/sentence_transformers/util.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/venv/Lib/site-packages/socketio/server.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/venv/Lib/site-packages/transformers/tokenization_utils_base.py" root0="SKIP_INSPECTION" />
   </component>
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="CurrentFile" />
@@ -222,7 +226,14 @@
       <workItem from="1737149198222" duration="5936000" />
       <workItem from="1737214485889" duration="3819000" />
       <workItem from="1737218549616" duration="27435000" />
-      <workItem from="1737384597524" duration="4841000" />
+      <workItem from="1737384597524" duration="5747000" />
+      <workItem from="1737394434615" duration="27978000" />
+      <workItem from="1737468235106" duration="11848000" />
+      <workItem from="1737500122087" duration="1206000" />
+      <workItem from="1737558166102" duration="8786000" />
+      <workItem from="1737571224639" duration="3598000" />
+      <workItem from="1737579228428" duration="6993000" />
+      <workItem from="1737643867526" duration="9041000" />
     </task>
     <servers />
   </component>

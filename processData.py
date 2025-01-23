@@ -104,7 +104,7 @@ def build_users_tweet_text(
                 ref_author_idx = user_index[ref_author]
                 users_tweet_text[ref_author_idx].add(clean_ref_text)
         elif row.ref_type in ["quoted", "replied_to"] and ref_text:
-            interaction_text = f'{clean_text(row.text)}\n[{row.ref_type} @{ref_author}: "{clean_text(ref_text)[:200]}"]'
+            interaction_text = f'{clean_text(row.text)}\n[{row.ref_type} @{ref_author}: "{clean_text(ref_text)[:50]}"]'
             users_tweet_text[author_idx].add(interaction_text)
 
             if ref_author and ref_author in user_index:
