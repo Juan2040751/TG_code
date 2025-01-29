@@ -7,11 +7,13 @@
     <list default="true" id="68971e0c-dbaf-4bf6-8ed2-bbefd3510547" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/InfluenceNetwork.py" beforeDir="false" afterPath="$PROJECT_DIR$/InfluenceNetwork.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/confidenceHeuristics.py" beforeDir="false" afterPath="$PROJECT_DIR$/confidenceHeuristics.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/influence.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/influenceHeuristics.py" beforeDir="false" afterPath="$PROJECT_DIR$/influenceHeuristics.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pensional.ipynb" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/processData.py" beforeDir="false" afterPath="$PROJECT_DIR$/processData.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/similarity.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/similarity.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/stanceHeuristics.py" beforeDir="false" afterPath="$PROJECT_DIR$/stanceHeuristics.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/user_stances.csv" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -24,8 +26,8 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="Jupyter Notebook" />
         <option value="Python Script" />
+        <option value="Jupyter Notebook" />
       </list>
     </option>
   </component>
@@ -45,6 +47,7 @@
     <option name="RESET_MODE" value="SOFT" />
   </component>
   <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/../AppData/Local/Programs/Python/Python312/Lib/contextlib.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/venv/Lib/site-packages/flask_socketio/__init__.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/venv/Lib/site-packages/openai/resources/chat/completions.py" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/venv/Lib/site-packages/sentence_transformers/cross_encoder/CrossEncoder.py" root0="SKIP_INSPECTION" />
@@ -233,7 +236,12 @@
       <workItem from="1737558166102" duration="8786000" />
       <workItem from="1737571224639" duration="3598000" />
       <workItem from="1737579228428" duration="6993000" />
-      <workItem from="1737643867526" duration="9041000" />
+      <workItem from="1737643867526" duration="9479000" />
+      <workItem from="1737667127438" duration="4083000" />
+      <workItem from="1737733389156" duration="10969000" />
+      <workItem from="1737819698019" duration="12836000" />
+      <workItem from="1738125445354" duration="239000" />
+      <workItem from="1738159543034" duration="19695000" />
     </task>
     <servers />
   </component>

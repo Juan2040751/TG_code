@@ -7,23 +7,9 @@ import pandas as pd
 from numpy import ndarray
 from sentence_transformers import SentenceTransformer
 
-from processData import normalization_min_max, get_embeddings
+from processData import normalization_min_max, get_embeddings, get_mentions_list
 
 similarity_model = SentenceTransformer('jaimevera1107/all-MiniLM-L6-v2-similarity-es')
-def get_mentions_list(tweet_entities: str) -> List[str]:
-    """
-    Extracts the list of mentioned usernames from a tweet's entity data.
-
-    Parameters:
-        tweet_entities (str): JSON string representing the tweet's entities.
-
-    Returns:
-        List[str]: List of mentioned usernames in the tweet.
-    """
-    try:
-        return [mention['username'] for mention in literal_eval(tweet_entities).get("mentions", [])]
-    except:
-        raise ValueError(f"Invalid tweet_entities format")
 
 
 def identify_nodes(df: pd.DataFrame) -> List[str]:
@@ -187,7 +173,8 @@ def build_affinities_matrix(
         users_tweet_text: List[Set[str]],
         users_stances: Dict[str, float],
         index_user: Dict[int, str],
-        mentions_matrix_nonNorm: np.ndarray
+        mentions_matrix_nonNorm: np.ndarray,
+        affinityEmit
 ) -> np.ndarray:
     """
     Calculates the affinity between users based on similarity of opinions and polarities.
@@ -215,6 +202,7 @@ def build_affinities_matrix(
         return embeddings
 
     embeddings = {}
+    affinityEmit("affinity_work_info", n)
     for i in range(n - 1):
         if i not in user_with_stances:
             continue
@@ -229,7 +217,7 @@ def build_affinities_matrix(
             stance_diff = abs(stance_i - stance_j)
             if stance_diff < 0.2:
                 similarity_opinions: float = similarity_model.similarity(embeddings_i,
-                                                                            embeddings_j).mean()
+                                                                         embeddings_j).mean()
 
                 affinity_value_ij = similarity_opinions * mentions_matrix_nonNorm[i, j]
                 affinity_value_ji = similarity_opinions * mentions_matrix_nonNorm[j, i]
@@ -239,10 +227,14 @@ def build_affinities_matrix(
                     users_affinity[i, j] = similarity_opinions
                 else:
                     users_affinity[i, j] = 0
-                users_affinity[i, j] = affinity_value_ij if affinity_value_ij != 0 else (similarity_opinions if similarity_opinions > .7 else 0)
-                users_affinity[j, i] = affinity_value_ji if affinity_value_ji != 0 else (similarity_opinions if similarity_opinions > .7 else 0)
+                users_affinity[i, j] = affinity_value_ij if affinity_value_ij != 0 else (
+                    similarity_opinions if similarity_opinions > .7 else 0)
+                users_affinity[j, i] = affinity_value_ji if affinity_value_ji != 0 else (
+                    similarity_opinions if similarity_opinions > .7 else 0)
         b = time.time()
-        print(f"affinity work: {i=}, {(i + 1)/(n-1):.1%}, {b-a:.1f}s", end="\r")
+        print(f"affinity work: {i=}, {(i + 1) / (n - 1):.1%}, {b - a:.1f}s", end="\r")
+        if i % 5 == 0:
+            affinityEmit("affinity_work", (i + 1) / (n - 1))
 
     users_affinity = normalization_min_max(users_affinity)
     users_affinity[users_affinity < 0.01] = 0

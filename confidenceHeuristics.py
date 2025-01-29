@@ -7,7 +7,7 @@ def calculate_extremism_confidence(stances: ndarray):
     Calculates confidence based on how extreme the stance is.
     Extreme stances (close to 0 or 1) are assigned higher confidence.
     """
-    stance_confidence = lambda stance: -1 if stance < 0 or stance > 1 else abs(stance - 0.5) / 0.5
+    stance_confidence = lambda stance: None if stance < 0 or stance > 1 else abs(stance - 0.5) / 0.5
     return np.vectorize(stance_confidence)(stances)
 
 

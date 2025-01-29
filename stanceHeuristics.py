@@ -2,31 +2,27 @@ import json
 import os
 import re
 import time
-from multiprocessing import Pool
+from functools import partial
+from multiprocessing import Pool, Manager, Process
 from typing import Dict, List, Set, Tuple
 
 import numpy as np
 from dotenv import dotenv_values
 from numpy import ndarray
 from openai import OpenAI, OpenAIError, APIConnectionError
-from pydantic import BaseModel
 
 openIAKey = dotenv_values(".env")["OPENAI_API_KEY"]
 client = OpenAI(api_key=openIAKey)
 
 
-class Stance(BaseModel):
-    value: float | None
 
 
-def stanceDetection(args) -> Dict[str, float | None]:
-    users_batch: Dict[str, Set[str]] = args[0]
-    prompt: str = args[1]
-    a: time = args[2]
+
+def stanceDetection(users_batch: Dict[str, Set[str]], prompt: str, a: time) -> Dict[str, float | None]:
     max_retries = 10
     initial_delay = 0.5
     pid = os.getpid()
-    print(f"working on {len(users_batch)} users {pid=}", )
+    print(f"working on {len(users_batch)} users {pid=}")
     for attempt in range(max_retries):
         try:
             completion = client.chat.completions.create(
@@ -37,13 +33,12 @@ def stanceDetection(args) -> Dict[str, float | None]:
                 ],
                 response_format={"type": "json_object"}
             )
-            # print(f"{completion=}")
             response: str = completion.choices[0].message.content
             b = time.time()
 
-            anwser = {user: json.loads(response).get(user, None) for user in users_batch.keys()}
-            print(f"{len(anwser)} processed, {pid=} ({b - a:.1f}s)")
-            return anwser
+            answer = {user: json.loads(response).get(user, None) for user in users_batch.keys()}
+            print(f"{len(answer)} users processed, {pid=} ({b - a:.1f}s)")
+            return answer
 
         except OpenAIError as e:
             if hasattr(e, "code") and e.code == "rate_limit_exceeded":
@@ -60,8 +55,9 @@ def stanceDetection(args) -> Dict[str, float | None]:
             time.sleep(initial_delay * (2 ** attempt))
         except (SyntaxError, ValueError) as e:
             print(f"Parsing error: {e}")
+            break
 
-    return None
+    return {user: None for user in users_batch.keys()}
 
 
 def split_batches(
@@ -100,9 +96,7 @@ def split_batches(
 
     if current_batch:
         batches.append(current_batch)
-    a = time.time()
 
-    batches = np.array([(batch, prompt, a) for batch in batches])
     return batches
 
 
@@ -141,6 +135,7 @@ def calculate_stance(
         users_tweet_text: ndarray[Set[str]],
         users: List[str],
         prompt: str,
+        stanceEmit,
         output_file: str = "testing_result.json",
         testing: bool = True
 ) -> Dict[str, float | None]:
@@ -150,12 +145,22 @@ def calculate_stance(
 
     stances = {user: None for user, opinions in zip(users, users_tweet_text) if not opinions}
 
-    users_with_opinions = np.array([(user, frozenset(opinions)) for user, opinions in zip(users, users_tweet_text) if opinions])
+    users_with_opinions = np.array(
+        [(user, frozenset(opinions)) for user, opinions in zip(users, users_tweet_text) if opinions])
     users_with_opinions, users_with_same_opinions = users_with_unique_opinions(users_with_opinions)
     batches = split_batches(users_with_opinions, prompt)
+
+
+    stanceEmit("stance_time", {"n_users": len(users), "null_stances": len(stances), "estimated_time": 30*len(batches)//8, "n_batch": len(batches) })
+
+
     print("op4:", len(batches))
+    a = time.time()
     with Pool(8) as p:
-        stance_batches = p.map(stanceDetection, batches)
+        stance_batches = p.map(partial(stanceDetection, prompt=prompt, a=a,), batches)
+
+
+
     for stance_batch in stance_batches:
         batch_copy = stance_batch.copy()
         for user, stance in batch_copy.items():

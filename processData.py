@@ -1,4 +1,5 @@
 import re
+from ast import literal_eval
 from functools import cache
 from typing import Dict, List, Optional
 
@@ -55,7 +56,20 @@ def preprocess_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         df[col] = df[col].fillna(default)
     return df
 
+def get_mentions_list(tweet_entities: str) -> List[str]:
+    """
+    Extracts the list of mentioned usernames from a tweet's entity data.
 
+    Parameters:
+        tweet_entities (str): JSON string representing the tweet's entities.
+
+    Returns:
+        List[str]: List of mentioned usernames in the tweet.
+    """
+    try:
+        return [mention['username'] for mention in literal_eval(tweet_entities).get("mentions", [])]
+    except:
+        raise ValueError(f"Invalid tweet_entities format")
 def clean_text(text: str) -> str:
     """
     Preprocesses a text by replacing URLs and emojis, and removing extra spaces.
@@ -110,7 +124,6 @@ def build_users_tweet_text(
             if ref_author and ref_author in user_index:
                 ref_author_idx = user_index[ref_author]
                 users_tweet_text[ref_author_idx].add(clean_text(ref_text))
-
     return np.array(users_tweet_text, dtype=object)
 
 
