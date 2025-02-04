@@ -3,8 +3,8 @@ import os
 import re
 import time
 from functools import partial
-from multiprocessing import Pool, Manager, Process
-from typing import Dict, List, Set, Tuple
+from multiprocessing import Pool
+from typing import Dict, List, Set, Tuple, Callable
 
 import numpy as np
 from dotenv import dotenv_values
@@ -15,10 +15,23 @@ openIAKey = dotenv_values(".env")["OPENAI_API_KEY"]
 client = OpenAI(api_key=openIAKey)
 
 
+def stance_detection(users_batch: Dict[str, Set[str]], prompt: str, a: time) -> Dict[str, float | None]:
+    """
+    Detects stance for a batch of users based on their textual content.
 
+    Params:
+        users_batch (Dict[str, Set[str]]): Dictionary mapping user IDs to their set of opinions.
+        prompt (str): Instructional prompt for stance estimation.
+        a (time): Start time for performance measurement.
 
+    Returns:
+        Dict[str, float | None]: Dictionary mapping each user to a stance score in the range [0,1].
+                                 Returns None for users where stance could not be determined.
 
-def stanceDetection(users_batch: Dict[str, Set[str]], prompt: str, a: time) -> Dict[str, float | None]:
+    Notes:
+        - Implements retry logic for handling API rate limits and connection errors.
+        - Parses JSON response and ensures robust error handling.
+    """
     max_retries = 10
     initial_delay = 0.5
     pid = os.getpid()
@@ -60,31 +73,35 @@ def stanceDetection(users_batch: Dict[str, Set[str]], prompt: str, a: time) -> D
     return {user: None for user in users_batch.keys()}
 
 
-def split_batches(
-        users_with_opinions: ndarray[Tuple[str, Set[str]]],
-        prompt: str,
-        max_tokens: int = 22500
-) -> List[Dict[str, Set[str]]]:
+def split_batches(users_with_opinions: ndarray[Tuple[str, Set[str]]], prompt: str, max_tokens: int = 22500) -> List[
+    Dict[str, Set[str]]]:
     """
-    Dynamically split user data into batches that fit within the max_tokens limit.
+    Splits user opinion data into manageable batches to fit within token constraints.
+
+    Params:
+        users_with_opinions (ndarray[Tuple[str, Set[str]]]): Array of user-opinion tuples.
+        prompt (str): Instructional prompt for stance estimation.
+        max_tokens (int, optional): Maximum allowed tokens per batch. Defaults to 22500.
+
+    Returns:
+        List[Dict[str, Set[str]]]: List of batches, each being a dictionary mapping users to opinions.
     """
     batches = []
     current_batch = {}
 
-    def estimate_tokens(prompt: str, user_batch: Dict[str, Set[str]]) -> int:
+    def estimate_tokens(user_batch: Dict[str, Set[str]]) -> int:
         """
-        Estimates the number of tokens for a given prompt and user batch.
         Estimates the number of tokens for a given prompt and user batch.
         """
         user_batch_str = json.dumps(user_batch, ensure_ascii=False)
         total_content = f"{prompt}\n{user_batch_str}"
         return len(total_content.split())
 
-    current_tokens = estimate_tokens(prompt, current_batch)
+    current_tokens = estimate_tokens(current_batch)
 
     for user, opinions in users_with_opinions:
         user_data = {user: list(opinions)}
-        additional_tokens = estimate_tokens(prompt, user_data)
+        additional_tokens = estimate_tokens(user_data)
 
         if current_tokens + additional_tokens > max_tokens:
             batches.append(current_batch)
@@ -100,21 +117,17 @@ def split_batches(
     return batches
 
 
-def users_with_unique_opinions(users_with_opinions: ndarray
-                               ) -> Tuple[ndarray, Dict[str, List[str]]]:
+def users_with_unique_opinions(users_with_opinions: ndarray) -> Tuple[ndarray, Dict[str, List[str]]]:
     """
-    Groups users by unique opinions and tracks users sharing the same opinions.
+    Identifies unique opinion groups and tracks users sharing the same opinions.
 
-    Parameters:
-        users_with_opinions (list[tuple[str, set[str]]]): A list of tuples where each tuple contains
-                                                          a user (str) and their opinions (set[str]).
+    Params:
+        users_with_opinions (ndarray): Array of tuples containing user IDs and their set of opinions.
 
     Returns:
-        tuple:
-            - dict[str, set[str]]: A dictionary where each key is a user representing unique opinions
-                                   and the value is the corresponding set of unique opinions.
-            - dict[str, list[str]]: A dictionary where each key is a user representing a unique opinion
-                                    group, and the value is a list of users sharing the same opinions.
+        Tuple:
+            - ndarray: Array of unique opinion representatives and their opinions.
+            - Dict[str, List[str]]: Mapping of representative users to a list of users sharing the same opinions.
     """
     unique_opinions = {}
     users_with_same_opinions = {}
@@ -127,18 +140,31 @@ def users_with_unique_opinions(users_with_opinions: ndarray
             representative_user = unique_opinions[opinions]
             users_with_same_opinions.setdefault(representative_user, []).append(user)
 
-    users_with_unique_opinions = np.array([(user, opinions) for opinions, user in unique_opinions.items()])
-    return users_with_unique_opinions, users_with_same_opinions
+    users_with_unique_opinions_ = np.array([(user, opinions) for opinions, user in unique_opinions.items()])
+    return users_with_unique_opinions_, users_with_same_opinions
 
 
-def calculate_stance(
-        users_tweet_text: ndarray[Set[str]],
-        users: List[str],
-        prompt: str,
-        stanceEmit,
-        output_file: str = "testing_result.json",
-        testing: bool = True
-) -> Dict[str, float | None]:
+def calculate_stance(users_tweet_text: ndarray[Set[str]], users: List[str], prompt: str,
+                     stanceEmit: Callable[[str, Dict[str, int]], None],
+                     output_file: str = "testing_result.json", testing: bool = True) -> Dict[str, float | None]:
+    """
+    Computes and emits stance estimation for users based on their textual content.
+
+    Params:
+        users_tweet_text (ndarray[Set[str]]): Array containing sets of tweets per user.
+        users (List[str]): List of user IDs.
+        prompt (str): Instructional prompt for stance estimation.
+        stanceEmit (Callable): Function to emit stance-related events.
+        output_file (str, optional): File path to store cached results. Defaults to "testing_result.json".
+        testing (bool, optional): If True, loads cached results when available. Defaults to True.
+
+    Returns:
+        Dict[str, float | None]: Dictionary mapping each user to a stance score in the range [0,1].
+                                 Returns None for users where stance could not be determined.
+
+    Emits:
+        - "stance_time" with batch processing statistics.
+    """
     if testing and os.path.exists(output_file):
         with open(output_file, "r") as f:
             return json.load(f)
@@ -150,16 +176,14 @@ def calculate_stance(
     users_with_opinions, users_with_same_opinions = users_with_unique_opinions(users_with_opinions)
     batches = split_batches(users_with_opinions, prompt)
 
-
-    stanceEmit("stance_time", {"n_users": len(users), "null_stances": len(stances), "estimated_time": 30*len(batches)//8, "n_batch": len(batches) })
-
+    stanceEmit("stance_time",
+               {"n_users": len(users), "null_stances": len(stances), "estimated_time": 30 * len(batches) // 8,
+                "n_batch": len(batches)})
 
     print("op4:", len(batches))
     a = time.time()
     with Pool(8) as p:
-        stance_batches = p.map(partial(stanceDetection, prompt=prompt, a=a,), batches)
-
-
+        stance_batches = p.map(partial(stance_detection, prompt=prompt, a=a), batches)
 
     for stance_batch in stance_batches:
         batch_copy = stance_batch.copy()

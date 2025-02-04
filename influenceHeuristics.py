@@ -1,6 +1,6 @@
 import time
 from ast import literal_eval
-from typing import List, Dict, Set, Tuple
+from typing import List, Dict, Set, Tuple, Callable
 
 import numpy as np
 import pandas as pd
@@ -45,7 +45,7 @@ def identify_nodes(df: pd.DataFrame) -> List[str]:
 
 def build_mentions_matrix(
         df: pd.DataFrame,
-        user_index: Dict[str, int]
+        user_to_index: Dict[str, int]
 ) -> Tuple[ndarray, ndarray, ndarray]:
     """
     Builds a mentions matrix quantifying interactions between users, along with a matrix of dates.
@@ -56,7 +56,7 @@ def build_mentions_matrix(
             - 'entities': A JSON string representing tweet entities.
             - 'ref_author': The username of the referenced author (if any).
             - 'created_at': Timestamp of the tweet's creation.
-        user_index (Dict[str, int]): Dictionary mapping usernames to unique indices.
+        user_to_index (Dict[str, int]): Dictionary mapping usernames to unique indices.
 
     Returns:
         Tuple[ndarray, ndarray, ndarray]:
@@ -64,19 +64,19 @@ def build_mentions_matrix(
             - Matrix of lists containing timestamps for mentions.
             - Rounded mentions matrix before normalization.
     """
-    n = len(user_index)
+    n = len(user_to_index)
     mentions_matrix = np.zeros((n, n), dtype=int)
     mentions_matrix_date = np.empty((n, n), dtype=object)
     for row in df.itertuples(index=False):
         author = row.author_username
-        author_idx = user_index.get(author)
+        author_idx = user_to_index.get(author)
         mentions = set(get_mentions_list(row.entities))
 
         if row.ref_author:
             mentions.add(row.ref_author)
 
         for mentioned_user in mentions:
-            mentioned_user_idx = user_index.get(mentioned_user)
+            mentioned_user_idx = user_to_index.get(mentioned_user)
 
             if mentioned_user_idx is not None and author_idx is not None:
                 mentions_matrix[mentioned_user_idx, author_idx] += 1
@@ -93,7 +93,7 @@ def build_mentions_matrix(
 
 def build_global_influence_matrix(
         df: pd.DataFrame,
-        user_index: Dict[str, int],
+        user_to_index: Dict[str, int],
         mentions_matrix_nonNorm: ndarray
 ) -> Tuple[ndarray, ndarray]:
     """
@@ -103,7 +103,7 @@ def build_global_influence_matrix(
         df (pd.DataFrame): DataFrame containing tweet data with the following columns:
             - 'author_username': The username of the tweet's author.
             - 'public_metrics': JSON string with metrics such as retweets, replies, likes, etc.
-        user_index (Dict[str, int]): Dictionary mapping usernames to unique indices.
+        user_to_index (Dict[str, int]): Dictionary mapping usernames to unique indices.
         mentions_matrix_nonNorm (ndarray): Non-normalized mentions matrix.
 
     Returns:
@@ -111,7 +111,7 @@ def build_global_influence_matrix(
             - Global influence matrix (n x n), normalized using Min-Max.
             - Global influence vector for each user.
     """
-    n = len(user_index)
+    n = len(user_to_index)
     global_influence = np.zeros(n, dtype=float)
 
     metrics_keys = [
@@ -121,7 +121,7 @@ def build_global_influence_matrix(
 
     for row in df.itertuples(index=False):
         author = row.author_username
-        author_idx = user_index.get(author)
+        author_idx = user_to_index.get(author)
         if author_idx is not None:
             tweet_metrics = literal_eval(row.public_metrics)
             n_retweets, n_replies, n_likes, n_quotes, n_bookmarks, n_impressions = (
@@ -142,7 +142,7 @@ def build_global_influence_matrix(
 
 
 def build_local_influence_matrix(
-        user_index: Dict[str, int],
+        user_to_index: Dict[str, int],
         global_influence: ndarray,
         mentions_matrix_nonNorm: ndarray
 ) -> ndarray:
@@ -150,14 +150,14 @@ def build_local_influence_matrix(
     Computes the local influence matrix based on global influence and community connections.
 
     Parameters:
-        user_index (Dict[str, int]): Dictionary mapping usernames to unique indices.
+        user_to_index (Dict[str, int]): Dictionary mapping usernames to unique indices.
         global_influence (ndarray): Array of global influence values for each user.
         mentions_matrix_nonNorm (ndarray): Non-normalized mentions matrix.
 
     Returns:
         ndarray: Local influence matrix (n x n), normalized using Min-Max scaling.
     """
-    n = len(user_index)
+    n = len(user_to_index)
     local_influence = np.zeros(n, dtype=float)
 
     for i in range(n):
@@ -174,12 +174,12 @@ def build_affinities_matrix(
         users_stances: Dict[str, float],
         index_user: Dict[int, str],
         mentions_matrix_nonNorm: np.ndarray,
-        affinityEmit
+        affinityEmit: Callable[[str, int], None]
 ) -> np.ndarray:
     """
     Calculates the affinity between users based on similarity of opinions and polarities.
 
-    Parameters:
+    Params:
         users_tweet_text (List[set[str]]): Preprocessed opinions for each user.
         users_stances (Dict[str, float]): Dictionary of user stances on a particular topic.
         index_user (Dict[str, int]): Mapping of user identifiers to their index.

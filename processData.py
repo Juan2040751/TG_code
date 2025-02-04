@@ -1,7 +1,7 @@
 import re
 from ast import literal_eval
 from functools import cache
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Callable, Set
 
 import emoji
 import numpy as np
@@ -51,10 +51,11 @@ def preprocess_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             f"El Dataset no contiene las siguientes columnas necesarias: {', '.join(missing_columns)}"
         )
     df = df[["text", "created_at", "public_metrics", "entities", "author_username", "ref_type",
-            "ref_author", "ref_text", "ref_note_tweet"]]
+             "ref_author", "ref_text", "ref_note_tweet"]]
     for col, default in default_values.items():
         df[col] = df[col].fillna(default)
     return df
+
 
 def get_mentions_list(tweet_entities: str) -> List[str]:
     """
@@ -70,6 +71,8 @@ def get_mentions_list(tweet_entities: str) -> List[str]:
         return [mention['username'] for mention in literal_eval(tweet_entities).get("mentions", [])]
     except:
         raise ValueError(f"Invalid tweet_entities format")
+
+
 def clean_text(text: str) -> str:
     """
     Preprocesses a text by replacing URLs and emojis, and removing extra spaces.
@@ -88,23 +91,23 @@ def clean_text(text: str) -> str:
 
 def build_users_tweet_text(
         df: pd.DataFrame,
-        user_index: Dict[str, int]
-) -> ndarray:
+        user_to_index: Dict[str, int]
+) -> ndarray[Set[str]]:
     """
     Builds a list of sets containing preprocessed opinions or interactions for each user.
 
-    Parameters:
+    Params:
         df (pd.DataFrame): DataFrame containing tweet data.
-        user_index (Dict[str, int]): Dictionary mapping each username to a unique index.
+        user_to_index (Dict[str, int]): Dictionary mapping each username to a unique index.
 
     Returns:
         ndarray: Array of sets with preprocessed opinions or interactions for each user.
     """
-    n = len(user_index)
+    n = len(user_to_index)
     users_tweet_text = [set() for _ in range(n)]
 
     for row in df.itertuples(index=False):
-        author_idx = user_index[row.author_username]
+        author_idx = user_to_index[row.author_username]
         ref_author = row.ref_author if row.ref_author else None
         ref_text = row.ref_note_tweet if row.ref_note_tweet else row.ref_text
 
@@ -115,14 +118,14 @@ def build_users_tweet_text(
             users_tweet_text[author_idx].add(clean_ref_text)
 
             if ref_author:
-                ref_author_idx = user_index[ref_author]
+                ref_author_idx = user_to_index[ref_author]
                 users_tweet_text[ref_author_idx].add(clean_ref_text)
         elif row.ref_type in ["quoted", "replied_to"] and ref_text:
             interaction_text = f'{clean_text(row.text)}\n[{row.ref_type} @{ref_author}: "{clean_text(ref_text)[:50]}"]'
             users_tweet_text[author_idx].add(interaction_text)
 
-            if ref_author and ref_author in user_index:
-                ref_author_idx = user_index[ref_author]
+            if ref_author and ref_author in user_to_index:
+                ref_author_idx = user_to_index[ref_author]
                 users_tweet_text[ref_author_idx].add(clean_text(ref_text))
     return np.array(users_tweet_text, dtype=object)
 
@@ -142,6 +145,7 @@ def get_embeddings(text: str, similarity_model):
     cleaned_text = re.sub(r'\n\[.*?\]', '', text).strip()
     return similarity_model.encode(cleaned_text, clean_up_tokenization_spaces=True, normalize_embeddings=True)
 
+
 @cache
 def get_polarity(text: str, sentiment_analyzer) -> float:
     """
@@ -159,7 +163,8 @@ def get_polarity(text: str, sentiment_analyzer) -> float:
     return polarity
 
 
-def create_link_processor(index_user: Dict[int, str]):
+def create_link_processor(index_to_user: Dict[int, str]) -> Callable[
+    [ndarray, Optional[ndarray]], List[Dict[str, float]]]:
     """
     Creates a processor function to convert an adjacency matrix into a list of links for a network.
 
@@ -170,9 +175,10 @@ def create_link_processor(index_user: Dict[int, str]):
         Callable[[ndarray, Optional[ndarray]], List[Dict[str, Any]]]: A function that processes an adjacency matrix
         and an optional mentions date matrix into a list of links.
     """
+
     def get_links_matrix(
-        adjacency_matrix: ndarray,
-        mentions_matrix_date: Optional[ndarray] = None
+            adjacency_matrix: ndarray,
+            mentions_matrix_date: Optional[ndarray] = None
     ) -> List[Dict[str, float]]:
         """
         Converts an adjacency matrix into a list of links (edges) with source, target, and influence values.
@@ -194,11 +200,11 @@ def create_link_processor(index_user: Dict[int, str]):
         links = []
 
         for influencer_id, user_influences in enumerate(adjacency_matrix):
-            source_name = index_user[influencer_id]
+            source_name = index_to_user[influencer_id]
 
             for influenced_user_id, interpersonal_influence in enumerate(user_influences):
                 if abs(interpersonal_influence) >= 0.01:
-                    target_name = index_user[influenced_user_id]
+                    target_name = index_to_user[influenced_user_id]
                     link = {
                         "source": source_name,
                         "target": target_name,
@@ -211,7 +217,6 @@ def create_link_processor(index_user: Dict[int, str]):
         return links
 
     return get_links_matrix
-
 
 
 def normalization_min_max(matrix: ndarray) -> ndarray:
@@ -231,6 +236,5 @@ def normalization_min_max(matrix: ndarray) -> ndarray:
     max_value = matrix_transformed.max()
     if max_value > min_value:
         matrix_transformed = (matrix_transformed - min_value) / (max_value - min_value)
-    matrix_transformed = np.round(matrix_transformed,3)
+    matrix_transformed = np.round(matrix_transformed, 3)
     return matrix_transformed
-

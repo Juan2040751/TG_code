@@ -8,12 +8,7 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/InfluenceNetwork.py" beforeDir="false" afterPath="$PROJECT_DIR$/InfluenceNetwork.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/confidenceHeuristics.py" beforeDir="false" afterPath="$PROJECT_DIR$/confidenceHeuristics.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/influence.csv" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/influenceHeuristics.py" beforeDir="false" afterPath="$PROJECT_DIR$/influenceHeuristics.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pensional.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/processData.py" beforeDir="false" afterPath="$PROJECT_DIR$/processData.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/stanceHeuristics.py" beforeDir="false" afterPath="$PROJECT_DIR$/stanceHeuristics.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/llama.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/llama.ipynb" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -110,8 +105,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-deb605915726-JavaScript-PY-243.22562.220" />
-        <option value="bundled-python-sdk-0fc6c617c4bd-9a18a617cbe4-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-243.22562.220" />
+        <option value="bundled-js-predefined-d6986cc7102b-822845ee3bb5-JavaScript-PY-243.23654.177" />
+        <option value="bundled-python-sdk-91d3a02ef49d-43b77aa2d136-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-243.23654.177" />
       </set>
     </attachedChunks>
   </component>
@@ -241,7 +236,12 @@
       <workItem from="1737733389156" duration="10969000" />
       <workItem from="1737819698019" duration="12836000" />
       <workItem from="1738125445354" duration="239000" />
-      <workItem from="1738159543034" duration="19695000" />
+      <workItem from="1738159543034" duration="20595000" />
+      <workItem from="1738247370550" duration="191000" />
+      <workItem from="1738247652493" duration="9063000" />
+      <workItem from="1738266262412" duration="8769000" />
+      <workItem from="1738592372018" duration="4445000" />
+      <workItem from="1738618970667" duration="1021000" />
     </task>
     <servers />
   </component>
