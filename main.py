@@ -149,7 +149,7 @@ def calculate_beliefs(users_tweet_text: ndarray[Set[str]], users: List[str], sid
     def stanceEmit(event: str, val: Dict[str, int]) -> None:
         socketio.emit(event, val, to=sid)
 
-    stances = calculate_stance(users_tweet_text, users, prompt, stanceEmit, testing=True)
+    stances = calculate_stance(users_tweet_text, users, prompt, stanceEmit, testing=False)
     socketio.emit("belief_heuristic", stances, to=sid)
     socketio.sleep(0.01)
     return stances

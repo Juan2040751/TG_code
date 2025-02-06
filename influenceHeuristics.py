@@ -221,12 +221,6 @@ def build_affinities_matrix(
 
                 affinity_value_ij = similarity_opinions * mentions_matrix_nonNorm[i, j]
                 affinity_value_ji = similarity_opinions * mentions_matrix_nonNorm[j, i]
-                if mentions_matrix_nonNorm[j, i] != 0:
-                    users_affinity[i, j] = affinity_value_ij
-                elif similarity_opinions > .5:
-                    users_affinity[i, j] = similarity_opinions
-                else:
-                    users_affinity[i, j] = 0
                 users_affinity[i, j] = affinity_value_ij if affinity_value_ij != 0 else (
                     similarity_opinions if similarity_opinions > .7 else 0)
                 users_affinity[j, i] = affinity_value_ji if affinity_value_ji != 0 else (
