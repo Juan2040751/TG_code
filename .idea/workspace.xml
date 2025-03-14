@@ -5,14 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="68971e0c-dbaf-4bf6-8ed2-bbefd3510547" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/TG_code.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/TG_code.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/influenceHeuristics.py" beforeDir="false" afterPath="$PROJECT_DIR$/influenceHeuristics.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/llama.ipynb" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/processData.py" beforeDir="false" afterPath="$PROJECT_DIR$/processData.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/similarity.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/similarity.ipynb" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -69,6 +66,7 @@
   &quot;keyToString&quot;: {
     &quot;ASKED_MARK_IGNORED_FILES_AS_EXCLUDED&quot;: &quot;true&quot;,
     &quot;Flask server.TG_code.executor&quot;: &quot;ConcurrencyExecutor&quot;,
+    &quot;Python.DIAGRAM.executor&quot;: &quot;Run&quot;,
     &quot;Python.InfluenceNetwork.executor&quot;: &quot;Run&quot;,
     &quot;Python.test.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.OpenDjangoStructureViewOnStart&quot;: &quot;true&quot;,
@@ -84,7 +82,7 @@
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;terminal&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
@@ -248,7 +246,24 @@
       <workItem from="1738618970667" duration="1021000" />
       <workItem from="1738683696984" duration="16062000" />
       <workItem from="1738788066417" duration="2255000" />
-      <workItem from="1738851226500" duration="3912000" />
+      <workItem from="1738851226500" duration="5712000" />
+      <workItem from="1739027164580" duration="6653000" />
+      <workItem from="1739313716027" duration="4820000" />
+      <workItem from="1739549237592" duration="12580000" />
+      <workItem from="1739757926393" duration="19000" />
+      <workItem from="1739912553945" duration="2391000" />
+      <workItem from="1739977717112" duration="1062000" />
+      <workItem from="1740097125743" duration="927000" />
+      <workItem from="1740169946470" duration="1822000" />
+      <workItem from="1740327334882" duration="1069000" />
+      <workItem from="1741100641141" duration="862000" />
+      <workItem from="1741189546406" duration="328000" />
+      <workItem from="1741363003226" duration="1161000" />
+      <workItem from="1741702684983" duration="2120000" />
+      <workItem from="1741728322154" duration="2819000" />
+      <workItem from="1741790180480" duration="1702000" />
+      <workItem from="1741876520491" duration="6077000" />
+      <workItem from="1741978398812" duration="7260000" />
     </task>
     <servers />
   </component>
@@ -273,6 +288,7 @@
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/TG_code$InfluenceNetwork.coverage" NAME="InfluenceNetwork Coverage Results" MODIFIED="1731191675514" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/TG_code$DIAGRAM.coverage" NAME="DIAGRAM Coverage Results" MODIFIED="1739566091443" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/TG_code$TG_code.coverage" NAME="TG_code Coverage Results" MODIFIED="1738686362558" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/TG_code$test.coverage" NAME="test Coverage Results" MODIFIED="1732042066910" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>

@@ -1,5 +1,6 @@
 import time
 from ast import literal_eval
+from code import interact
 from typing import List, Dict, Set, Tuple, Callable
 
 import numpy as np
@@ -43,52 +44,84 @@ def identify_nodes(df: pd.DataFrame) -> List[str]:
     return list(users)
 
 
-def build_mentions_matrix(
+def build_interaction_matrix(
         df: pd.DataFrame,
         user_to_index: Dict[str, int]
-) -> Tuple[ndarray, ndarray, ndarray]:
+) -> Tuple[ndarray, ndarray, ndarray, ndarray, ndarray]:
     """
-    Builds a mentions matrix quantifying interactions between users, along with a matrix of dates.
+    Builds multiple interaction matrices quantifying interactions between users.
 
     Parameters:
         df (pd.DataFrame): DataFrame containing tweet data with the following columns:
             - 'author_username': The username of the tweet's author.
-            - 'entities': A JSON string representing tweet entities.
-            - 'ref_author': The username of the referenced author (if any).
+            - 'entities': A JSON string representing tweet entities (mentions).
+            - 'ref_author': The username of the original author (if retweeted).
             - 'created_at': Timestamp of the tweet's creation.
+            - 'text': The full text of the tweet.
+
         user_to_index (Dict[str, int]): Dictionary mapping usernames to unique indices.
 
     Returns:
-        Tuple[ndarray, ndarray, ndarray]:
-            - Normalized mentions matrix (n x n), where [i, j] represents the interaction count from user j to user i.
+        Tuple[ndarray, ndarray, ndarray, ndarray, ndarray]:
+            - Normalized interaction matrix (mentions + retweets).
             - Matrix of lists containing timestamps for mentions.
-            - Rounded mentions matrix before normalization.
+            - Rounded interaction matrix before normalization.
+            - Retweets-only matrix.
+            - Direct mentions-only matrix.
     """
     n = len(user_to_index)
+    interactions_matrix = np.zeros((n, n), dtype=int)
     mentions_matrix = np.zeros((n, n), dtype=int)
-    mentions_matrix_date = np.empty((n, n), dtype=object)
+    retweets_matrix = np.zeros((n, n), dtype=int)
+    interactions_matrix_date = np.empty((n, n), dtype=object)
+
     for row in df.itertuples(index=False):
         author = row.author_username
         author_idx = user_to_index.get(author)
-        mentions = set(get_mentions_list(row.entities))
 
-        if row.ref_author:
-            mentions.add(row.ref_author)
+        if author_idx is None:
+            continue
 
-        for mentioned_user in mentions:
-            mentioned_user_idx = user_to_index.get(mentioned_user)
+        is_retweet = row.ref_type == 'retweeted'
+        if is_retweet:
+            ref_author_idx = user_to_index.get(row.ref_author, None)
+            if ref_author_idx is not None:
+                interactions_matrix[ref_author_idx, author_idx] += 1
+                retweets_matrix[ref_author_idx, author_idx] += 1
 
-            if mentioned_user_idx is not None and author_idx is not None:
-                mentions_matrix[mentioned_user_idx, author_idx] += 1
-                if mentions_matrix_date[mentioned_user_idx, author_idx] is None:
-                    mentions_matrix_date[mentioned_user_idx, author_idx] = [row.created_at]
+                if interactions_matrix_date[ref_author_idx, author_idx] is None:
+                    interactions_matrix_date[ref_author_idx, author_idx] = [row.created_at]
                 else:
-                    mentions_matrix_date[mentioned_user_idx, author_idx].append(row.created_at)
+                    interactions_matrix_date[ref_author_idx, author_idx].append(row.created_at)
 
-    normalized_matrix = normalization_min_max(mentions_matrix)
-    rounded_matrix = np.round(mentions_matrix, 3)
+            continue
 
-    return normalized_matrix, mentions_matrix_date, rounded_matrix
+        is_reply = row.ref_type == 'replied_to'
+        mentions = set(get_mentions_list(row.entities))
+        for mentioned_user in mentions:
+            mentioned_user_idx = user_to_index.get(mentioned_user, None)
+            if mentioned_user_idx is not None:
+                interactions_matrix[mentioned_user_idx, author_idx] += 1
+                if interactions_matrix_date[mentioned_user_idx, author_idx] is None:
+                    interactions_matrix_date[mentioned_user_idx, author_idx] = [row.created_at]
+                else:
+                    interactions_matrix_date[mentioned_user_idx, author_idx].append(row.created_at)
+
+                if is_reply:
+                    first_space_idx = row.text.find(" ")
+                    cleaned_text = row.text[first_space_idx + 1:] if first_space_idx != -1 else row.text
+
+                    if  f"@{mentioned_user}" in cleaned_text:
+                        mentions_matrix[mentioned_user_idx, author_idx] += 1
+
+
+    normalized_matrix = normalization_min_max(interactions_matrix)
+    retweets_matrix = normalization_min_max(retweets_matrix)
+    mentions_matrix = normalization_min_max(mentions_matrix)
+    rounded_matrix = np.round(interactions_matrix, 3)
+
+    return normalized_matrix, interactions_matrix_date, rounded_matrix, retweets_matrix, mentions_matrix
+
 
 
 def build_global_influence_matrix(

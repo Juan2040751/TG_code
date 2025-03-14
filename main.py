@@ -11,7 +11,7 @@ from numpy import ndarray
 from beliefHeuristic import calculate_stance
 from confidenceHeuristic import estimate_confidence
 from influenceHeuristics import (
-    build_mentions_matrix, identify_nodes, build_global_influence_matrix,
+    build_interaction_matrix, identify_nodes, build_global_influence_matrix,
     build_local_influence_matrix, build_affinities_matrix, build_agreement_matrix
 )
 from processData import preprocess_dataframe, create_link_processor, build_users_tweet_text
@@ -36,10 +36,10 @@ def build_influence_networks(df: pd.DataFrame, user_to_index, index_to_user, sid
 
     Returns:
         tuple:
-            - mentions_matrix (ndarray): Matrix representing user mentions.
-            - mentions_matrix_date (ndarray): Matrix with timestamps of mentions.
+            - interactions_matrix (ndarray): Matrix representing user mentions.
+            - interactions_matrix_date (ndarray): Matrix with timestamps of mentions.
             - get_links_matrix (Callable): Function to extract links from matrices.
-            - mentions_matrix_nonNorm (ndarray): Non-normalized mentions matrix.
+            - interactions_matrix_nonNorm (ndarray): Non-normalized mentions matrix.
 
     Emits:
         - "influence_heuristic" with mentions-based influence links.
@@ -48,22 +48,30 @@ def build_influence_networks(df: pd.DataFrame, user_to_index, index_to_user, sid
     """
 
     get_links_matrix = create_link_processor(index_to_user)
-    mentions_matrix, mentions_matrix_date, mentions_matrix_nonNorm = build_mentions_matrix(df, user_to_index)
+    interactions_matrix, interactions_matrix_date, interactions_matrix_nonNorm, retweets_matrix, mentions_matrix = build_interaction_matrix(df, user_to_index)
 
-    socketio.emit("influence_heuristic", {"mentions_links": get_links_matrix(mentions_matrix, mentions_matrix_date)},
+    interactions_links = get_links_matrix(interactions_matrix, interactions_matrix_date, "Interactions")
+    retweets_links = get_links_matrix(retweets_matrix,links_name="Retweets" )
+    del retweets_matrix
+    mentions_links = get_links_matrix(mentions_matrix, links_name= "Mentions")
+    del mentions_matrix
+
+    interactions_links.extend(retweets_links)
+    interactions_links.extend(mentions_links)
+    socketio.emit("influence_heuristic", {"mentions_links": interactions_links},
                   to=sid)
 
     global_influence_matrix, global_influence = build_global_influence_matrix(df, user_to_index,
-                                                                              mentions_matrix_nonNorm)
+                                                                              interactions_matrix_nonNorm)
     socketio.emit("influence_heuristic",
-                  {"global_influence_links": get_links_matrix(global_influence_matrix, mentions_matrix_date)}, to=sid)
+                  {"global_influence_links": get_links_matrix(global_influence_matrix, interactions_matrix_date)}, to=sid)
 
-    local_influence_matrix = build_local_influence_matrix(user_to_index, global_influence, mentions_matrix_nonNorm)
+    local_influence_matrix = build_local_influence_matrix(user_to_index, global_influence, interactions_matrix_nonNorm)
     socketio.emit("influence_heuristic",
-                  {"local_influence_links": get_links_matrix(local_influence_matrix, mentions_matrix_date)},
+                  {"local_influence_links": get_links_matrix(local_influence_matrix, interactions_matrix_date)},
                   to=sid)
     socketio.sleep(0.01)
-    return mentions_matrix, mentions_matrix_date, get_links_matrix, mentions_matrix_nonNorm
+    return interactions_matrix, interactions_matrix_date, get_links_matrix, interactions_matrix_nonNorm
 
 
 def build_influence_networks_with_stances(stances: Dict[str, float | None], index_to_user: Dict[int, str],
@@ -103,6 +111,7 @@ def build_influence_networks_with_stances(stances: Dict[str, float | None], inde
     socketio.emit("influence_heuristic", {"affinities_links": get_links_matrix(affinities_matrix)},
                   to=sid)
 
+
 def calculate_beliefs(users_tweet_text: ndarray[Set[str]], users: List[str], sid: str) -> Dict[str, float | None]:
     """
     Calculates and emits users' belief estimations based on their textual content.
@@ -128,28 +137,33 @@ def calculate_beliefs(users_tweet_text: ndarray[Set[str]], users: List[str], sid
     topic_context = (
         "El gobierno del presidente Gustavo Petro presentó un proyecto de ley para reformar el sistema pensional, "
         "el cual fue aprobado con el apoyo de algunos sectores y cuestionado por otros.")
-    prompt = (
-        f"Eres un analista experto e imparcial en {topic}. Tu tarea es medir la postura de un grupo de usuarios frente a este tema en un rango continuo entre 0 y 1, donde: "
-        f"0 = Férreamente en contra, 1 = Reciamente a favor, 0.5 = Neutral, "
-        f"0.25 = Oposición moderada (reconoce o no está enfáticamente indispuesto a reconocer aspectos positivos), "
-        f"0.75 = Apoyo moderado (reconoce o está predispuesto a reconocer objeciones)."
-        f"Contexto: \"{topic_context}\" "
-        "Entrada: Un JSON donde cada clave es el nombre de un usuario y su valor es una lista de opiniones obtenidas de redes sociales sobre este tema."
-        "Instrucciones: "
-        "1. Para cada usuario, analiza la postura general en todas sus opiniones."
-        "2. Calcula la proporción de frases a favor vs. en contra del tema."
-        "3. Emociones explícitas directas hacia el tema refuerzan la postura (más emoción positiva = postura cercana a 1; negativa = cercana a 0)."
-        "4. Pondera adjetivos y adverbios utilizados para expresar alguna postura frente al tema."
-        "5. Conectores de oposición indican postura moderada. Ej: 'aunque no es perfecta, la reforma pensional es un paso positivo' o 'a pesar de las críticas, tiene aspectos rescatables'."
-        "6. Los adverbios de cantidad indican posturas extremas, y los de duda, posturas moderadas."
-        f"Y cualquier otro criterio que consideres relevante para estimar la postura de cada usuario frente a {topic} en el rango [0,1]"
-        f"Salida esperada: Un JSON donde cada clave es el nombre de un usuario a analizar sus opiniones y su correspondiente valor es un número de dos decimales, como 0.21, 0.75 o 0.03, representando la postura general del usuario frente a {topic}. No retornes nada más."
-    )
+    prompt = f"""
+        Eres un analista experto e imparcial de opiniones sobre {topic}.
+        Tu tarea es medir la postura de un grupo de usuarios frente a este tema en un rango continuo entre 0 y 1, donde: 
+        0 = Férreamente en contra, 1 = Reciamente a favor, 0.5 = Neutral, 
+        0.25 = Oposición moderada (reconoce o no está enfáticamente indispuesto a reconocer aspectos positivos), 
+        0.75 = Apoyo moderado (reconoce o está predispuesto a reconocer objeciones).
+        Contexto: \"{topic_context}\"
+        Entrada: Un JSON donde cada clave es el nombre de un usuario y su valor es una lista de opiniones obtenidas de redes sociales sobre este tema.
+        Instrucciones: 
+        1. Para cada usuario, analiza la postura general en todas sus opiniones.
+        2. Calcula la proporción de frases a favor vs. en contra del tema.
+        3. Emociones explícitas directas hacia el tema refuerzan la postura (más emoción positiva = postura cercana a 1; negativa = cercana a 0).
+        4. Pondera adjetivos y adverbios utilizados para expresar alguna postura frente al tema.
+        5. Conectores de oposición indican postura moderada.
+         Ej: 'aunque no es perfecta, la reforma pensional es un paso positivo' o 'a pesar de las críticas, tiene aspectos rescatables'.
+        6. Los adverbios de cantidad indican posturas extremas, y los de duda, posturas moderadas.
+        Y cualquier otro criterio que consideres relevante para estimar la postura de cada usuario frente a {topic} en el rango [0,1]
+        Salida esperada: Un JSON donde cada clave es el nombre de un usuario a analizar sus opiniones y su correspondiente valor es un número de dos decimales, 
+        como 0.21, 0.75 o 0.03, representando la postura general del usuario frente a {topic}.
+        O si las opiniones de un usuario no son suficientes para determinar una postura con certeza, devuelve 'None'.
+        No retornes nada más.
+        """
 
     def stanceEmit(event: str, val: Dict[str, int]) -> None:
         socketio.emit(event, val, to=sid)
 
-    stances = calculate_stance(users_tweet_text, users, prompt, stanceEmit, testing=False)
+    stances = calculate_stance(users_tweet_text, users, prompt, stanceEmit, testing=True)
     socketio.emit("belief_heuristic", stances, to=sid)
     socketio.sleep(0.01)
     return stances
