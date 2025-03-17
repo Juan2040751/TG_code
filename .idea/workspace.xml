@@ -6,10 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="68971e0c-dbaf-4bf6-8ed2-bbefd3510547" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/influenceHeuristics.py" beforeDir="false" afterPath="$PROJECT_DIR$/influenceHeuristics.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/processData.py" beforeDir="false" afterPath="$PROJECT_DIR$/processData.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/similarity.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/similarity.ipynb" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -263,7 +260,8 @@
       <workItem from="1741728322154" duration="2819000" />
       <workItem from="1741790180480" duration="1702000" />
       <workItem from="1741876520491" duration="6077000" />
-      <workItem from="1741978398812" duration="7260000" />
+      <workItem from="1741978398812" duration="7668000" />
+      <workItem from="1742135439919" duration="14387000" />
     </task>
     <servers />
   </component>
