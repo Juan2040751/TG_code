@@ -6,6 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="68971e0c-dbaf-4bf6-8ed2-bbefd3510547" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/influenceHeuristics.py" beforeDir="false" afterPath="$PROJECT_DIR$/influenceHeuristics.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -41,12 +42,8 @@
   </component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/../AppData/Local/Programs/Python/Python312/Lib/contextlib.py" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/venv/Lib/site-packages/flask_socketio/__init__.py" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/venv/Lib/site-packages/openai/resources/chat/completions.py" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/venv/Lib/site-packages/sentence_transformers/cross_encoder/CrossEncoder.py" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/venv/Lib/site-packages/sentence_transformers/util.py" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/venv/Lib/site-packages/socketio/server.py" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/venv/Lib/site-packages/transformers/tokenization_utils_base.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/../AppData/Local/Temp/20419066-90ca-4c29-81ea-120a814ff3ad_Afinidad.zip.3ad/Afinidad-aristas.csv" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/../AppData/Local/Temp/99cf0b0f-168c-4955-a622-bddf04b4410e_Afinidad.zip.10e/Afinidad-nodos.csv" root0="SKIP_INSPECTION" />
   </component>
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="CurrentFile" />
@@ -73,7 +70,7 @@
     &quot;Shell Script.env activation.executor&quot;: &quot;Run&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
     &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/jujov/TG_code&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/jujov/OneDrive/Escritorio/I/UNIVERSIDAD JUAN JOSE/semestre 10/PROGRAMACIÓN CON RESTRICCIONES (E)/Taller1-PPR&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -104,8 +101,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-822845ee3bb5-JavaScript-PY-243.23654.177" />
-        <option value="bundled-python-sdk-91d3a02ef49d-43b77aa2d136-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-243.23654.177" />
+        <option value="bundled-js-predefined-d6986cc7102b-1632447f56bf-JavaScript-PY-243.26053.29" />
+        <option value="bundled-python-sdk-b1dbf8ef85a6-4df51de95216-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-243.26053.29" />
       </set>
     </attachedChunks>
   </component>
@@ -261,7 +258,19 @@
       <workItem from="1741790180480" duration="1702000" />
       <workItem from="1741876520491" duration="6077000" />
       <workItem from="1741978398812" duration="7668000" />
-      <workItem from="1742135439919" duration="14387000" />
+      <workItem from="1742135439919" duration="14478000" />
+      <workItem from="1742306258740" duration="697000" />
+      <workItem from="1742325255976" duration="1307000" />
+      <workItem from="1742759766548" duration="884000" />
+      <workItem from="1743178419708" duration="140000" />
+      <workItem from="1743190188123" duration="288000" />
+      <workItem from="1743257646441" duration="390000" />
+      <workItem from="1743361565753" duration="96000" />
+      <workItem from="1743603016194" duration="4155000" />
+      <workItem from="1743718837637" duration="5519000" />
+      <workItem from="1743952850476" duration="5781000" />
+      <workItem from="1743986944388" duration="234000" />
+      <workItem from="1744056901324" duration="7854000" />
     </task>
     <servers />
   </component>

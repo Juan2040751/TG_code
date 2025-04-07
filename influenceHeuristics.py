@@ -160,13 +160,15 @@ def build_global_influence_matrix(
             n_retweets, n_replies, n_likes, n_quotes, n_bookmarks, n_impressions = (
                 tweet_metrics.get(key, 0) for key in metrics_keys
             )
-
+            """
             global_influence[author_idx] += (
                     0.43 * (n_retweets + n_quotes + n_replies) +
                     0.33 * (n_likes + n_bookmarks) +
                     0.23 * n_impressions +
                     0.01
             )
+            """
+            global_influence[author_idx] += (n_retweets + n_quotes + n_replies + n_likes)
 
     global_influence_matrix = mentions_matrix_nonNorm * global_influence[:, np.newaxis]
     global_influence_matrix = normalization_min_max(global_influence_matrix)

@@ -113,7 +113,7 @@ def build_influence_networks_with_stances(stances: Dict[str, float | None], inde
 
 
 
-def calculate_beliefs(users_tweet_text: ndarray[Set[str]], users: List[str], sid: str) -> Dict[str, float | None]:
+def calculate_beliefs(users_tweet_text: ndarray[Set[str]], users: List[str], sid: str, topic_info: Dict[str, str]) -> Dict[str, float | None]:
     """
     Calculates and emits users' belief estimations based on their textual content.
 
@@ -134,10 +134,8 @@ def calculate_beliefs(users_tweet_text: ndarray[Set[str]], users: List[str], sid
         - Uses a predefined prompt to guide the stance estimation process.
         - Incorporates linguistic and contextual analysis to determine the belief score.
     """
-    topic = "La reforma pensional en Colombia"
-    topic_context = (
-        "El gobierno del presidente Gustavo Petro presentó un proyecto de ley para reformar el sistema pensional, "
-        "el cual fue aprobado con el apoyo de algunos sectores y cuestionado por otros.")
+    topic = topic_info["topic"]
+    topic_context = topic_info["topic_context"]
     prompt = f"""
         Eres un analista experto e imparcial de opiniones sobre {topic}.
         Tu tarea es medir la postura de un grupo de usuarios frente a este tema en un rango continuo entre 0 y 1, donde: 
@@ -185,7 +183,7 @@ def calculate_confidences(stances: Dict[str, float | None], sid: str) -> None:
     socketio.emit("confidence_heuristic", confidences, to=sid)
 
 
-def calculate_heuristics(users: List[str], df: pd.DataFrame, sid: str) -> None:
+def calculate_heuristics(users: List[str], df: pd.DataFrame, sid: str, topic_info: Dict[str, str]) -> None:
     """
     Calculates and emits estimates for stance, confidence, and multiple influence heuristics.
 
@@ -212,7 +210,7 @@ def calculate_heuristics(users: List[str], df: pd.DataFrame, sid: str) -> None:
                                                                                                                 sid)
 
     users_tweet_text = build_users_tweet_text(df, user_to_index)
-    stances = calculate_beliefs(users_tweet_text, users, sid)
+    stances = calculate_beliefs(users_tweet_text, users, sid, topic_info)
 
     calculate_confidences(stances, sid)
 
@@ -242,6 +240,7 @@ def process_csv(message):
     try:
         # Decode CSV from base64
         csv_data = message.get('csv_data')
+        topic_info = message.get('topic_info')
         if not csv_data:
             emit("preprocess_error", "CSV data is missing", broadcast=False)
             return
@@ -254,7 +253,7 @@ def process_csv(message):
         emit("users", list(users), broadcast=False)
 
         sid = request.sid
-        socketio.start_background_task(calculate_heuristics, users, df, sid)
+        socketio.start_background_task(calculate_heuristics, users, df, sid, topic_info)
     except ValueError as e:
         print(e)
         emit("preprocess_error", f"Error processing CSV: {str(e)}", broadcast=False)
