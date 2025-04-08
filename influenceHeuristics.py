@@ -1,10 +1,11 @@
 import time
 from ast import literal_eval
-from code import interact
 from typing import List, Dict, Set, Tuple, Callable
 
+import networkx as nx
 import numpy as np
 import pandas as pd
+from networkx.algorithms.threshold import betweenness_sequence
 from numpy import ndarray
 from sentence_transformers import SentenceTransformer
 
@@ -111,9 +112,8 @@ def build_interaction_matrix(
                     first_space_idx = row.text.find(" ")
                     cleaned_text = row.text[first_space_idx + 1:] if first_space_idx != -1 else row.text
 
-                    if  f"@{mentioned_user}" in cleaned_text:
+                    if f"@{mentioned_user}" in cleaned_text:
                         mentions_matrix[mentioned_user_idx, author_idx] += 1
-
 
     normalized_matrix = normalization_min_max(interactions_matrix)
     retweets_matrix = normalization_min_max(retweets_matrix)
@@ -123,11 +123,10 @@ def build_interaction_matrix(
     return normalized_matrix, interactions_matrix_date, rounded_matrix, retweets_matrix, mentions_matrix
 
 
-
 def build_global_influence_matrix(
         df: pd.DataFrame,
         user_to_index: Dict[str, int],
-        mentions_matrix_nonNorm: ndarray
+        interactions_matrix_nonNorm: ndarray
 ) -> Tuple[ndarray, ndarray]:
     """
     Computes the global influence matrix by weighting user interactions and mentions.
@@ -137,7 +136,7 @@ def build_global_influence_matrix(
             - 'author_username': The username of the tweet's author.
             - 'public_metrics': JSON string with metrics such as retweets, replies, likes, etc.
         user_to_index (Dict[str, int]): Dictionary mapping usernames to unique indices.
-        mentions_matrix_nonNorm (ndarray): Non-normalized mentions matrix.
+        interactions_matrix_nonNorm (ndarray): Non-normalized mentions matrix.
 
     Returns:
         Tuple[ndarray, ndarray]:
@@ -146,6 +145,7 @@ def build_global_influence_matrix(
     """
     n = len(user_to_index)
     global_influence = np.zeros(n, dtype=float)
+    betweenness_centrality = np.zeros(n, dtype=float)
 
     metrics_keys = [
         'retweet_count', 'reply_count', 'like_count',
@@ -160,48 +160,19 @@ def build_global_influence_matrix(
             n_retweets, n_replies, n_likes, n_quotes, n_bookmarks, n_impressions = (
                 tweet_metrics.get(key, 0) for key in metrics_keys
             )
-            """
-            global_influence[author_idx] += (
-                    0.43 * (n_retweets + n_quotes + n_replies) +
-                    0.33 * (n_likes + n_bookmarks) +
-                    0.23 * n_impressions +
-                    0.01
-            )
-            """
             global_influence[author_idx] += (n_retweets + n_quotes + n_replies + n_likes)
 
-    global_influence_matrix = mentions_matrix_nonNorm * global_influence[:, np.newaxis]
+    global_influence_matrix = interactions_matrix_nonNorm * global_influence[:, np.newaxis]
     global_influence_matrix = normalization_min_max(global_influence_matrix)
 
-    return global_influence_matrix, global_influence
+    G = nx.from_numpy_array(interactions_matrix_nonNorm, create_using=nx.DiGraph)
+    betweenness = nx.betweenness_centrality(G)
+    for index, user_betweenness in betweenness.items():
+        betweenness_centrality[index] = user_betweenness
+    betweenness_influence_matrix = interactions_matrix_nonNorm * betweenness_centrality[:, np.newaxis]
+    betweenness_influence_matrix = normalization_min_max(betweenness_influence_matrix)
 
-
-def build_local_influence_matrix(
-        user_to_index: Dict[str, int],
-        global_influence: ndarray,
-        mentions_matrix_nonNorm: ndarray
-) -> ndarray:
-    """
-    Computes the local influence matrix based on global influence and community connections.
-
-    Parameters:
-        user_to_index (Dict[str, int]): Dictionary mapping usernames to unique indices.
-        global_influence (ndarray): Array of global influence values for each user.
-        mentions_matrix_nonNorm (ndarray): Non-normalized mentions matrix.
-
-    Returns:
-        ndarray: Local influence matrix (n x n), normalized using Min-Max scaling.
-    """
-    n = len(user_to_index)
-    local_influence = np.zeros(n, dtype=float)
-
-    for i in range(n):
-        community_influence = np.sum(global_influence[mentions_matrix_nonNorm[i] != 0])
-        total_influence = community_influence + global_influence[i]
-        local_influence[i] = global_influence[i] / total_influence if total_influence else 0
-
-    local_influence_matrix = mentions_matrix_nonNorm * local_influence[:, np.newaxis]
-    return normalization_min_max(local_influence_matrix)
+    return global_influence_matrix, betweenness_influence_matrix
 
 
 def build_affinities_matrix(

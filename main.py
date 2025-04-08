@@ -11,15 +11,15 @@ from numpy import ndarray
 from beliefHeuristic import calculate_stance
 from confidenceHeuristic import estimate_confidence
 from influenceHeuristics import (
-    build_interaction_matrix, identify_nodes, build_global_influence_matrix,
-    build_local_influence_matrix, build_affinities_matrix, build_agreement_matrix
+    build_interaction_matrix, identify_nodes, build_global_influence_matrix, build_affinities_matrix,
+    build_agreement_matrix
 )
 from processData import preprocess_dataframe, create_link_processor, build_users_tweet_text
 
 app = Flask(__name__)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*", max_http_buffer_size=15000000, always_connect=True,
-                    ping_timeout=1200, async_mode='threading')
+                    ping_timeout=1800, async_mode='threading')
 
 
 def build_influence_networks(df: pd.DataFrame, user_to_index, index_to_user, sid) -> Tuple[
@@ -48,12 +48,13 @@ def build_influence_networks(df: pd.DataFrame, user_to_index, index_to_user, sid
     """
 
     get_links_matrix = create_link_processor(index_to_user)
-    interactions_matrix, interactions_matrix_date, interactions_matrix_nonNorm, retweets_matrix, mentions_matrix = build_interaction_matrix(df, user_to_index)
+    interactions_matrix, interactions_matrix_date, interactions_matrix_nonNorm, retweets_matrix, mentions_matrix = build_interaction_matrix(
+        df, user_to_index)
 
     interactions_links = get_links_matrix(interactions_matrix, interactions_matrix_date, "Interacciones")
-    retweets_links = get_links_matrix(retweets_matrix,links_name="Retweets" )
+    retweets_links = get_links_matrix(retweets_matrix, links_name="Retweets")
     del retweets_matrix
-    mentions_links = get_links_matrix(mentions_matrix, links_name= "Menciones")
+    mentions_links = get_links_matrix(mentions_matrix, links_name="Menciones")
     del mentions_matrix
 
     interactions_links.extend(retweets_links)
@@ -61,15 +62,15 @@ def build_influence_networks(df: pd.DataFrame, user_to_index, index_to_user, sid
     socketio.emit("influence_heuristic", {"mentions_links": interactions_links},
                   to=sid)
 
-    global_influence_matrix, global_influence = build_global_influence_matrix(df, user_to_index,
-                                                                              interactions_matrix_nonNorm)
+    global_influence_matrix, betweenness_influence_matrix = build_global_influence_matrix(df, user_to_index,
+                                                                                          interactions_matrix_nonNorm)
+    popularity_links = get_links_matrix(global_influence_matrix, interactions_matrix_date, links_name="Popularidad")
+    betweenness_links = get_links_matrix(betweenness_influence_matrix, interactions_matrix_date,
+                                         links_name="Betweenness")
+    popularity_links.extend(betweenness_links)
     socketio.emit("influence_heuristic",
-                  {"global_influence_links": get_links_matrix(global_influence_matrix, interactions_matrix_date, links_name= "Popularidad")}, to=sid)
+                  {"global_influence_links": popularity_links}, to=sid)
 
-    local_influence_matrix = build_local_influence_matrix(user_to_index, global_influence, interactions_matrix_nonNorm)
-    socketio.emit("influence_heuristic",
-                  {"local_influence_links": get_links_matrix(local_influence_matrix, interactions_matrix_date, links_name= "Popularidad Relativa")},
-                  to=sid)
     socketio.sleep(0.01)
     return interactions_matrix, interactions_matrix_date, get_links_matrix, interactions_matrix_nonNorm
 
@@ -99,7 +100,7 @@ def build_influence_networks_with_stances(stances: Dict[str, float | None], inde
     """
     agreement_matrix = build_agreement_matrix(mentions_matrix, stances, index_to_user)
     socketio.emit("influence_heuristic",
-                  {"agreement_links": get_links_matrix(agreement_matrix, mentions_matrix_date, links_name= "Acuerdo")},
+                  {"agreement_links": get_links_matrix(agreement_matrix, mentions_matrix_date, links_name="Acuerdo")},
                   to=sid)
 
     def affinityEmit(event: str, val: Dict[str, int]) -> None:
@@ -108,12 +109,13 @@ def build_influence_networks_with_stances(stances: Dict[str, float | None], inde
 
     affinities_matrix = build_affinities_matrix(users_tweet_text, stances, index_to_user, mentions_matrix_nonNorm,
                                                 affinityEmit)
-    socketio.emit("influence_heuristic", {"affinities_links": get_links_matrix(affinities_matrix, links_name= "Afinidad")},
+    socketio.emit("influence_heuristic",
+                  {"affinities_links": get_links_matrix(affinities_matrix, links_name="Afinidad")},
                   to=sid)
 
 
-
-def calculate_beliefs(users_tweet_text: ndarray[Set[str]], users: List[str], sid: str, topic_info: Dict[str, str]) -> Dict[str, float | None]:
+def calculate_beliefs(users_tweet_text: ndarray[Set[str]], users: List[str], sid: str, topic_info: Dict[str, str]) -> \
+Dict[str, float | None]:
     """
     Calculates and emits users' belief estimations based on their textual content.
 
