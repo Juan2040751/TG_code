@@ -19,7 +19,7 @@ from processData import preprocess_dataframe, create_link_processor, build_users
 app = Flask(__name__)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*", max_http_buffer_size=15000000, always_connect=True,
-                    ping_timeout=1800, async_mode='threading')
+                    ping_timeout=2000, async_mode='threading')
 
 
 def build_influence_networks(df: pd.DataFrame, user_to_index, index_to_user, sid) -> Tuple[
@@ -99,9 +99,7 @@ def build_influence_networks_with_stances(stances: Dict[str, float | None], inde
         None. The function emits the computed agreement and affinity networks.
     """
     agreement_matrix = build_agreement_matrix(mentions_matrix, stances, index_to_user)
-    socketio.emit("influence_heuristic",
-                  {"agreement_links": get_links_matrix(agreement_matrix, mentions_matrix_date, links_name="Acuerdo")},
-                  to=sid)
+    agreement_links = get_links_matrix(agreement_matrix, mentions_matrix_date, links_name="Acuerdo/Desacuerdo")
 
     def affinityEmit(event: str, val: Dict[str, int]) -> None:
         """ Helper function to emit affinity-related events. """
@@ -109,8 +107,11 @@ def build_influence_networks_with_stances(stances: Dict[str, float | None], inde
 
     affinities_matrix = build_affinities_matrix(users_tweet_text, stances, index_to_user, mentions_matrix_nonNorm,
                                                 affinityEmit)
+    affinities_links = get_links_matrix(affinities_matrix, links_name="Afinidad")
+
+    affinities_links.extend(agreement_links)
     socketio.emit("influence_heuristic",
-                  {"affinities_links": get_links_matrix(affinities_matrix, links_name="Afinidad")},
+                  {"affinities_links": affinities_links},
                   to=sid)
 
 

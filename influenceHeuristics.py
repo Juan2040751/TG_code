@@ -219,7 +219,6 @@ def build_affinities_matrix(
                 continue
             stance_j = user_with_stances[j]
             embeddings_j = calculate_embeddings(j) if j not in embeddings else embeddings[j]
-            embeddings[j] = embeddings_j
             stance_diff = abs(stance_i - stance_j)
             if stance_diff < 0.2:
                 similarity_opinions: float = similarity_model.similarity(embeddings_i,
@@ -228,9 +227,9 @@ def build_affinities_matrix(
                 affinity_value_ij = similarity_opinions * mentions_matrix_nonNorm[i, j]
                 affinity_value_ji = similarity_opinions * mentions_matrix_nonNorm[j, i]
                 users_affinity[i, j] = affinity_value_ij if affinity_value_ij != 0 else (
-                    similarity_opinions if similarity_opinions > .7 else 0)
+                    similarity_opinions if similarity_opinions > .8 else 0)
                 users_affinity[j, i] = affinity_value_ji if affinity_value_ji != 0 else (
-                    similarity_opinions if similarity_opinions > .7 else 0)
+                    similarity_opinions if similarity_opinions > .8 else 0)
         b = time.time()
         print(f"affinity work: {i=}, {(i + 1) / (n - 1):.1%}, {b - a:.1f}s", end="\r")
         if i % 5 == 0:
