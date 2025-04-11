@@ -58,6 +58,8 @@ def estimate_confidence(users_stances: dict[str, float], weight_extremism: float
 
     combined_confidence = weight_extremism * extremism_confidence + (1 - weight_extremism) * deviation_confidence
     combined_confidence = np.round(combined_confidence, 3)
+    combined_confidence= np.clip(combined_confidence, 0, 1)
     combined_confidence = np.where(np.isnan(combined_confidence), None, combined_confidence)
+
 
     return dict(zip(users_stances.keys(), combined_confidence))

@@ -164,7 +164,7 @@ def get_polarity(text: str, sentiment_analyzer) -> float:
 
 
 def create_link_processor(index_to_user: Dict[int, str]) -> Callable[
-    [ndarray, Optional[ndarray]], List[Dict[str, float]]]:
+    [ndarray, Optional[str]], List[Dict[str, float]]]:
     """
     Creates a processor function to convert an adjacency matrix into a list of links for a network.
 
@@ -178,7 +178,6 @@ def create_link_processor(index_to_user: Dict[int, str]) -> Callable[
 
     def get_links_matrix(
             adjacency_matrix: ndarray,
-            mentions_matrix_date: Optional[ndarray] = None,
             links_name: str = None
     ) -> List[Dict[str, float]]:
         """
@@ -187,8 +186,6 @@ def create_link_processor(index_to_user: Dict[int, str]) -> Callable[
         Parameters:
             adjacency_matrix (ndarray): A 2D array representing influence relationships.
                                         Each cell contains the influence value from a source node to a target node.
-            mentions_matrix_date (Optional[ndarray]): A 2D array containing dates for mentions between nodes.
-                                                      Defaults to None
             links_name (str): The name of the links returned by get_links_matrix. Defaults to None
 
         Returns:
@@ -213,8 +210,6 @@ def create_link_processor(index_to_user: Dict[int, str]) -> Callable[
                         "influenceValue": round(float(interpersonal_influence), 3),
                         "link_name": links_name,
                     }
-                    if mentions_matrix_date is not None:
-                        link["date"] = mentions_matrix_date[influencer_id, influenced_user_id]
                     links.append(link)
 
         return links
