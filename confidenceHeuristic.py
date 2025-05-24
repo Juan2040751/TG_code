@@ -46,7 +46,7 @@ def estimate_confidence(users_stances: dict[str, float], weight_extremism: float
 
     Params:
         users_stances (dict[str, float]): Dictionary mapping users to their stance values (float in range 0-1).
-        weight_extremism (float): Weight assigned to the extremism factor in the confidence calculation. Default is 0.4.
+        Weight_extremism (float): Weight assigned to the extremism factor in the confidence calculation. Default is 0.4.
 
     Returns:
         dict[str, float]: Dictionary mapping users to their estimated confidence scores (float between 0 and 1).

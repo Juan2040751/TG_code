@@ -1,7 +1,7 @@
 *.csv
+*.xlsx
 *.gexf
 venv
 ReformaPensional.csv
+ReformaPensional10000.csv
 .env
-testing_result.json
-*.ipynb

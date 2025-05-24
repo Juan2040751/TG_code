@@ -32,24 +32,25 @@ def stance_detection(users_batch: Dict[str, Set[str]], prompt: str, a: time) -> 
         - Implements retry logic for handling API rate limits and connection errors.
         - Parses JSON response and ensures robust error handling.
     """
-    max_retries = 10
+    max_retries = 5
     initial_delay = 0.5
     pid = os.getpid()
     print(f"working on {len(users_batch)} users {pid=}")
     for attempt in range(max_retries):
         try:
             completion = client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4.1",
                 messages=[
                     {"role": "system", "content": prompt},
                     {"role": "user", "content": str(users_batch)}
                 ],
                 response_format={"type": "json_object"}
             )
-            response: str = completion.choices[0].message.content
+            response = completion.choices[0].message.content
+            response = json.loads(response)
             b = time.time()
 
-            answer = {user: json.loads(response).get(user, None) for user in users_batch.keys()}
+            answer = {user: float(response[user]) if response.get(user, None) is not None and response[user] !="None" else None for user in users_batch}
             print(f"{len(answer)} users processed, {pid=} ({b - a:.1f}s)")
             return answer
 
@@ -73,7 +74,7 @@ def stance_detection(users_batch: Dict[str, Set[str]], prompt: str, a: time) -> 
     return {user: None for user in users_batch.keys()}
 
 
-def split_batches(users_with_opinions: ndarray[Tuple[str, Set[str]]], prompt: str, max_tokens: int = 22500) -> List[
+def split_batches(users_with_opinions: ndarray[Tuple[str, Set[str]]], prompt: str, max_tokens: int = 80000) -> List[
     Dict[str, Set[str]]]:
     """
     Splits user opinion data into manageable batches to fit within token constraints.
@@ -81,7 +82,7 @@ def split_batches(users_with_opinions: ndarray[Tuple[str, Set[str]]], prompt: st
     Params:
         users_with_opinions (ndarray[Tuple[str, Set[str]]]): Array of user-opinion tuples.
         prompt (str): Instructional prompt for stance estimation.
-        max_tokens (int, optional): Maximum allowed tokens per batch. Defaults to 22500.
+        max_tokens (int, optional): Maximum allowed tokens per batch. Defaults to 30000.
 
     Returns:
         List[Dict[str, Set[str]]]: List of batches, each being a dictionary mapping users to opinions.
@@ -136,7 +137,6 @@ def users_with_unique_opinions(users_with_opinions: ndarray) -> Tuple[ndarray, D
         if opinions not in unique_opinions:
             unique_opinions[opinions] = user
         else:
-            # Retrieve the representative user for these opinions
             representative_user = unique_opinions[opinions]
             users_with_same_opinions.setdefault(representative_user, []).append(user)
 
@@ -146,7 +146,7 @@ def users_with_unique_opinions(users_with_opinions: ndarray) -> Tuple[ndarray, D
 
 def calculate_stance(users_tweet_text: ndarray[Set[str]], users: List[str], prompt: str,
                      stanceEmit: Callable[[str, Dict[str, int]], None],
-                     output_file: str = "testing_result.json", testing: bool = True) -> Dict[str, float | None]:
+                     output_file: str = "testing_result.json", testing: bool = False) -> Dict[str, float | None]:
     """
     Computes and emits stance estimation for users based on their textual content.
 
@@ -155,7 +155,7 @@ def calculate_stance(users_tweet_text: ndarray[Set[str]], users: List[str], prom
         users (List[str]): List of user IDs.
         prompt (str): Instructional prompt for stance estimation.
         stanceEmit (Callable): Function to emit stance-related events.
-        output_file (str, optional): File path to store cached results. Defaults to "testing_result.json".
+        output_file (str, optional): File path to store cached results. Defaults to "porteDeArmas_result.json".
         testing (bool, optional): If True, loads cached results when available. Defaults to True.
 
     Returns:
@@ -177,7 +177,7 @@ def calculate_stance(users_tweet_text: ndarray[Set[str]], users: List[str], prom
     batches = split_batches(users_with_opinions, prompt)
 
     stanceEmit("stance_time",
-               {"n_users": len(users), "null_stances": len(stances), "estimated_time": 30 * len(batches) // 8,
+               {"n_users": len(users), "null_stances": len(stances), "estimated_time": 60 * len(batches) // 8,
                 "n_batch": len(batches)})
 
     print("op4:", len(batches))
@@ -193,7 +193,8 @@ def calculate_stance(users_tweet_text: ndarray[Set[str]], users: List[str], prom
                     stance_batch[same_user] = stance
         stances.update(stance_batch)
 
-    with open(output_file, "w") as f:
-        json.dump(stances, f, indent=4)
+    if testing:
+        with open(output_file, "w") as f:
+            json.dump(stances, f, indent=4)
     print(f"{len(stances)}, {len(users)}")
     return stances

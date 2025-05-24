@@ -8,6 +8,35 @@ import numpy as np
 import pandas as pd
 from numpy import ndarray
 
+def identify_nodes(df: pd.DataFrame) -> List[str]:
+    """
+    Identifies unique nodes in the DataFrame based on tweet authors and mentions.
+
+    Parameters:
+        df (pd.DataFrame): DataFrame containing tweet data with the following columns:
+            - 'author_username': The username of the tweet's author.
+            - 'ref_author': The username of the referenced author.
+            - 'entities': A JSON string containing tweet entities.
+
+    Returns:
+        List[str]: A list of unique usernames representing the nodes.
+
+    """
+    users: Set[str] = set(np.concatenate((
+        df['author_username'].dropna().unique(),
+        df['ref_author'].dropna().unique()
+    )))
+
+    for tweet_entities in df['entities'].dropna():
+        try:
+            tweet_mentions = get_mentions_list(tweet_entities)
+            users.update(tweet_mentions)
+        except ValueError:
+            continue
+
+    users.discard("")
+
+    return list(users)
 
 def preprocess_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -53,7 +82,7 @@ def preprocess_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df = df[["text", "created_at", "public_metrics", "entities", "author_username", "ref_type",
              "ref_author", "ref_text", "ref_note_tweet"]]
     for col, default in default_values.items():
-        df[col] = df[col].fillna(default)
+        df.loc[:, col] = df[col].fillna(default)
     return df
 
 
@@ -176,43 +205,30 @@ def create_link_processor(index_to_user: Dict[int, str]) -> Callable[
         and an optional mentions date matrix into a list of links.
     """
 
-    def get_links_matrix(
-            adjacency_matrix: ndarray,
-            links_name: str = None
-    ) -> List[Dict[str, float]]:
+    def get_links_matrix(adjacency_matrix: ndarray, links_name: str = None) -> List[Dict[str, float]]:
         """
-        Converts an adjacency matrix into a list of links (edges) with source, target, and influence values.
+        Converts an adjacency matrix into a list of links with source, target, and influence values.
 
-        Parameters:
-            adjacency_matrix (ndarray): A 2D array representing influence relationships.
-                                        Each cell contains the influence value from a source node to a target node.
-            links_name (str): The name of the links returned by get_links_matrix. Defaults to None
+        Params:
+            adjacency_matrix (ndarray): A 2D array with influence values from source to target.
+            links_name (str): Optional name for the links.
 
         Returns:
-            List[Dict[str, Any]]: A list of dictionaries representing the network's links.
-                                  Each dictionary includes:
-                                    - "source" (str): Source node identifier.
-                                    - "target" (str): Target node identifier.
-                                    - "influenceValue" (float): Influence value from source to target.
-                                    - "date" (str): Date of mention (if mentions_matrix_date is provided).
+            List[Dict[str, float]]: List of link dictionaries with source, target, influenceValue, and linkName.
         """
-        links = []
+        mask = np.abs(adjacency_matrix) >= 0.001
+        sources, targets = np.where(mask)
+        influences = adjacency_matrix[sources, targets]
 
-        for influencer_id, user_influences in enumerate(adjacency_matrix):
-            source_name = index_to_user[influencer_id]
-
-            for influenced_user_id, interpersonal_influence in enumerate(user_influences):
-                if abs(interpersonal_influence) >= 0.01:
-                    target_name = index_to_user[influenced_user_id]
-                    link = {
-                        "source": source_name,
-                        "target": target_name,
-                        "influenceValue": round(float(interpersonal_influence), 3),
-                        "link_name": links_name,
-                    }
-                    links.append(link)
-
-        return links
+        return [
+            {
+                "source": index_to_user[src],
+                "target": index_to_user[tgt],
+                "influenceValue": float(val),
+                "linkName": links_name,
+            }
+            for src, tgt, val in zip(sources, targets, influences)
+        ]
 
     return get_links_matrix
 

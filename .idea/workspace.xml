@@ -5,11 +5,18 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="68971e0c-dbaf-4bf6-8ed2-bbefd3510547" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/Evaluation/beliefPensional10000.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/TG_code.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/TG_code.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/beliefHeuristic.py" beforeDir="false" afterPath="$PROJECT_DIR$/beliefHeuristic.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/confidenceHeuristic.py" beforeDir="false" afterPath="$PROJECT_DIR$/confidenceHeuristic.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/influenceHeuristics.py" beforeDir="false" afterPath="$PROJECT_DIR$/influenceHeuristics.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/processData.py" beforeDir="false" afterPath="$PROJECT_DIR$/processData.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/similarity.ipynb" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -44,8 +51,8 @@
   </component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/../AppData/Local/Programs/Python/Python312/Lib/contextlib.py" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/../AppData/Local/Temp/20419066-90ca-4c29-81ea-120a814ff3ad_Afinidad.zip.3ad/Afinidad-aristas.csv" root0="SKIP_INSPECTION" />
-    <setting file="file://$PROJECT_DIR$/../AppData/Local/Temp/99cf0b0f-168c-4955-a622-bddf04b4410e_Afinidad.zip.10e/Afinidad-nodos.csv" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/../AppData/Local/Programs/Python/Python312/Lib/threading.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/.venv/Lib/site-packages/flask/wrappers.py" root0="SKIP_INSPECTION" />
   </component>
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="CurrentFile" />
@@ -58,30 +65,40 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ASKED_MARK_IGNORED_FILES_AS_EXCLUDED&quot;: &quot;true&quot;,
-    &quot;Flask server.TG_code.executor&quot;: &quot;ConcurrencyExecutor&quot;,
-    &quot;Python.DIAGRAM.executor&quot;: &quot;Run&quot;,
-    &quot;Python.InfluenceNetwork.executor&quot;: &quot;Run&quot;,
-    &quot;Python.test.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.OpenDjangoStructureViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;Shell Script.Unnamed.executor&quot;: &quot;Run&quot;,
-    &quot;Shell Script.env activation.executor&quot;: &quot;Run&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/jujov/OneDrive/Escritorio/I/UNIVERSIDAD JUAN JOSE/semestre 10/PROGRAMACIÓN CON RESTRICCIONES (E)/Taller1-PPR&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_MARK_IGNORED_FILES_AS_EXCLUDED": "true",
+    "Flask server.TG_code.executor": "ConcurrencyExecutor",
+    "Python.DIAGRAM.executor": "Run",
+    "Python.InfluenceNetwork.executor": "Run",
+    "Python.test.executor": "Run",
+    "RunOnceActivity.OpenDjangoStructureViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "Shell Script.Unnamed.executor": "Run",
+    "Shell Script.env activation.executor": "Run",
+    "database.data.extractors.current.export.id": "Comma-separated (CSV)_id",
+    "git-widget-placeholder": "main",
+    "ignore.virus.scanning.warn.message": "true",
+    "last_opened_file_path": "C:/Users/jujov/TG_code/Evaluation",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "com.intellij.jupyter.core.jupyter.connections.configuration.JupyterServerConfigurable",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\jujov\TG_code\Evaluation" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\jujov\TG_code" />
+      <recent name="C:\Users\jujov\TG_code\Evaluation" />
+    </key>
+  </component>
   <component name="RunManager">
     <configuration name="TG_code" type="Python.FlaskServer">
       <module name="TG_code" />
@@ -103,8 +120,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-1632447f56bf-JavaScript-PY-243.26053.29" />
-        <option value="bundled-python-sdk-b1dbf8ef85a6-4df51de95216-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-243.26053.29" />
+        <option value="bundled-js-predefined-d6986cc7102b-f27c65a3e318-JavaScript-PY-251.23774.444" />
+        <option value="bundled-python-sdk-890ed5b35930-d9c5bdb153f4-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-251.23774.444" />
       </set>
     </attachedChunks>
   </component>
@@ -278,7 +295,54 @@
       <workItem from="1744162284295" duration="67000" />
       <workItem from="1744208419670" duration="3666000" />
       <workItem from="1744240451209" duration="5232000" />
-      <workItem from="1744295517388" duration="7871000" />
+      <workItem from="1744295517388" duration="8665000" />
+      <workItem from="1744471678522" duration="3456000" />
+      <workItem from="1744566488631" duration="2014000" />
+      <workItem from="1744907126829" duration="4782000" />
+      <workItem from="1744922260751" duration="74000" />
+      <workItem from="1744922623290" duration="9912000" />
+      <workItem from="1745003295782" duration="7338000" />
+      <workItem from="1745095343084" duration="6263000" />
+      <workItem from="1745101734875" duration="420000" />
+      <workItem from="1745102170497" duration="2368000" />
+      <workItem from="1745107742317" duration="951000" />
+      <workItem from="1745160421347" duration="1900000" />
+      <workItem from="1745162365309" duration="11281000" />
+      <workItem from="1745331191227" duration="512000" />
+      <workItem from="1745597389746" duration="2781000" />
+      <workItem from="1745764356841" duration="7163000" />
+      <workItem from="1745781056593" duration="138000" />
+      <workItem from="1745781370496" duration="2780000" />
+      <workItem from="1745791958263" duration="3194000" />
+      <workItem from="1745850633608" duration="8187000" />
+      <workItem from="1745934609902" duration="5743000" />
+      <workItem from="1746031596228" duration="2090000" />
+      <workItem from="1746050526089" duration="593000" />
+      <workItem from="1746117074646" duration="10907000" />
+      <workItem from="1746240175494" duration="1265000" />
+      <workItem from="1746391588439" duration="3296000" />
+      <workItem from="1746405216030" duration="5000" />
+      <workItem from="1746416238222" duration="659000" />
+      <workItem from="1746445485991" duration="8411000" />
+      <workItem from="1746549468769" duration="1468000" />
+      <workItem from="1746572703809" duration="1783000" />
+      <workItem from="1746628665341" duration="3072000" />
+      <workItem from="1746732357913" duration="12429000" />
+      <workItem from="1746819611451" duration="3265000" />
+      <workItem from="1746887734207" duration="10456000" />
+      <workItem from="1747060487698" duration="10545000" />
+      <workItem from="1747094171777" duration="6192000" />
+      <workItem from="1747146337943" duration="7234000" />
+      <workItem from="1747339435804" duration="4496000" />
+      <workItem from="1747353889550" duration="1906000" />
+      <workItem from="1747355900329" duration="170000" />
+      <workItem from="1747416921516" duration="24029000" />
+      <workItem from="1747489115338" duration="16356000" />
+      <workItem from="1747760643181" duration="9571000" />
+      <workItem from="1747952299298" duration="17135000" />
+      <workItem from="1747972963708" duration="4340000" />
+      <workItem from="1748011766252" duration="3392000" />
+      <workItem from="1748099195694" duration="16219000" />
     </task>
     <servers />
   </component>
