@@ -70,11 +70,13 @@ def stance_detection(users_batch: Dict[str, Set[str]], prompt: str, a: time) -> 
         except (SyntaxError, ValueError) as e:
             print(f"Parsing error: {e}")
             break
+        except Exception as e:
+            print(e)
 
     return {user: None for user in users_batch.keys()}
 
 
-def split_batches(users_with_opinions: ndarray[Tuple[str, Set[str]]], prompt: str, max_tokens: int = 80000) -> List[
+def split_batches(users_with_opinions: ndarray[Tuple[str, Set[str]]], prompt: str, max_tokens: int = 60000) -> List[
     Dict[str, Set[str]]]:
     """
     Splits user opinion data into manageable batches to fit within token constraints.
@@ -177,7 +179,7 @@ def calculate_stance(users_tweet_text: ndarray[Set[str]], users: List[str], prom
     batches = split_batches(users_with_opinions, prompt)
 
     stanceEmit("stance_time",
-               {"n_users": len(users), "null_stances": len(stances), "estimated_time": 60 * len(batches) // 8,
+               {"n_users": len(users), "null_stances": len(stances), "estimated_time": 50 * len(batches) // 8,
                 "n_batch": len(batches)})
 
     print("op4:", len(batches))

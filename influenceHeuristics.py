@@ -131,8 +131,7 @@ def build_popularity_influence_matrix(
         betweenness_centrality[index] = user_betweenness
     betweenness_influence_matrix = interactions_matrix_nonNorm * betweenness_centrality[:, np.newaxis]
     betweenness_influence_matrix = normalization_min_max(betweenness_influence_matrix)
-    send_feedback({"open": False, "message": "",
-                   "progress": 0})
+    send_feedback({"message":"", "open": False}, event="progress_feedback")
     return popularity_influence_matrix, betweenness_influence_matrix
 
 
@@ -196,7 +195,7 @@ def build_affinities_matrix(
                         users_affinity[u_i, u_j] = val_ij
                         users_affinity[u_j, u_i] = val_ji
 
-        if idx_i % 10 == 0:
+        if idx_i % 15 == 0:
             affinityEmit("affinity_work", (idx_i + 1) / (len(rep_users) - 1))
             b = time.time()
             print(f"affinity work: {int((b - a) // 60)}:{(b - a) % 60:.0f}, ({(idx_i + 1) / (len(rep_users) - 1):.1%})",
