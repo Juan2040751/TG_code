@@ -214,11 +214,14 @@ def calculate_heuristics(users: List[str], df: pd.DataFrame, sid: str, topic_inf
 
     users_tweet_text = build_users_tweet_text(df, user_to_index)
     stances = calculate_beliefs(users_tweet_text, users, topic_info, sid=sid, testing=True)
+    socketio.emit("stance_time_close")
     socketio.emit("progress_feedback", {"message": "Estimando la confianza de los usuarios", "open": True}, to=sid)
     calculate_confidences(stances, sid=sid)
     socketio.emit("progress_feedback", {"message": "", "open": False}, to=sid)
+
     build_influence_networks_with_stances(stances, user_to_index, users_tweet_text,
                                           get_links_matrix, interactions_matrix_nonNorm, retweets_links, sid)
+    socketio.emit("affinity_work_close")
 
 
 @socketio.on('influenceGraph')
@@ -234,7 +237,7 @@ def process_csv(message):
         - "users": List of identified users after processing the CSV.
 
     Workflow:
-        1. Decodes and reads the CSV data into a DataFrame.
+        1. Decode and read the CSV data into a DataFrame.
         2. Preprocesses the DataFrame to handle missing values.
         3. Identifies unique nodes (users) from the data.
         4. Start the heuristics calculation

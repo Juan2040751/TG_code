@@ -40,7 +40,7 @@ def calculate_deviation_confidence(stances: ndarray[float | None]) -> ndarray[fl
     return deviations / max_deviation
 
 
-def estimate_confidence(users_stances: dict[str, float], weight_extremism: float = 0.4) -> dict[str, float | None]:
+def estimate_confidence(users_stances: dict[str, float], weight_extremism: float) -> dict[str, float | None]:
     """
     Estimates users' confidence in expressing their opinion based on extremism and deviation.
 
